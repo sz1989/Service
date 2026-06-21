@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+appsettings*.json
+.nuget/
+*.user
+*.suo
+*.userprefs
+.DS_Store
+certs/

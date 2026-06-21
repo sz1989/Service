@@ -1,0 +1,12 @@
+@Service_HostAddress = http://localhost:7070
+@Service_HostAddress_HTTPS = https://localhost:7071
+
+GET {{Service_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+GET {{Service_HostAddress_HTTPS}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,36 @@
+name: .NET Build and Test
+
+# This section controls automatically triggering the workflow
+on:
+  push:
+    branches: [ "main", "develop" ] # Triggers on commits to these branches
+  pull_request:
+    branches: [ "main" ]            # Triggers when a PR is opened against main
+
+jobs:
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest # The cloud virtual machine type to use
+
+    steps:
+    # Step 1: Point GitHub to your repository and download the code
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # Step 2: Install the .NET SDK on the runner
+    - name: Setup .NET Core SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x' 
+
+    # Step 3: Restore NuGet dependencies
+    - name: Restore Dependencies
+      run: dotnet restore ./Service.slnx
+
+    # Step 4: Compile the application without restoring again (saves time)
+    - name: Build Project
+      run: dotnet build ./Service.slnx --configuration Release --no-restore
+
+    # Step 5: Execute unit tests (if you have a test project in the solution)
+    - name: Run Tests
+      run: dotnet test ./Service.slnx --configuration Release --no-restore --no-build

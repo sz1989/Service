@@ -16,10 +16,13 @@ dotnet build
 ```bash
 docker build -t service:latest .
 
-docker run -d -p 7071:8081 -p 7070:8080 -v "$(pwd)/src/Service/certs:/app/certs" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certs/aspnetcore.pfx -e ASPNETCORE_Kestrel__Certificates__Default__Password='P@ssw0rd!' service:latest
+docker run -d --name my-service -p 7071:8081 -p 7070:8080 -v "$(pwd)/src/Service/certs:/app/certs" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certs/aspnetcore.pfx -e ASPNETCORE_Kestrel__Certificates__Default__Password='P@ssw0rd!' service:latest
+
+docker rm -f container_name
 ```
-mkdir -p certs && cp {path_to_aspnetapp.pfx} certs/ && sed -i '' 's|COPY /certs/aspnetapp.pfx /https/aspnetapp.pfx|COPY certs/aspnetapp.pfx /https/aspnetapp.pfx|' Dockerfilemkdir -p certs && cp {path_to_aspnetapp.pfx} certs/ && sed -i '' 's|COPY /certs/aspnetapp.pfx /https/aspnetapp.pfx|COPY certs/aspnetapp.pfx /https/aspnetapp.pfx|' Dockerfile```bash
-dotnet run
+-f (force)
+run docker run at root 
+
 
 dotnet publish --os linux --configuration Release -t:PublishContainer
 
@@ -53,6 +56,13 @@ Lists your running containers.-q: The "quiet" flag. It strips away the extra col
 docker ps -q | xargs -r docker stop
 ```
 docker stop (Graceful): Sends a SIGTERM signal. It asks the container nicely to save its state, finish current tasks, and close down safely. It waits 10 seconds before forcing it shut.docker kill (Forced): Sends a SIGKILL signal. It bypasses the container's internal process and cuts the power instantly.
+
+## Docker Compose CLI:
+```bash
+docker compose up -d
+docker compose down 
+```
+docker compose down -v
 
 ### Reference:
 🛠️ Core Slash Commands (/)These act as shortcuts so you don't have to write out long prompts. Just type  in the chat input to see them. 

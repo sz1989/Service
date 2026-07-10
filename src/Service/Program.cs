@@ -1,5 +1,3 @@
-using Serilog;
-
 namespace Service;
 
 public class Program
@@ -13,6 +11,8 @@ public class Program
             .ReadFrom.Services(services)
             .Enrich.FromLogContext());
 
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+        builder.Services.AddDbContext<Data.AppDbContext>(options => options.UseNpgsql(connectionString));
         // Add services to the container.
         builder.Services.AddControllers();
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

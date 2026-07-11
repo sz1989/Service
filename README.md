@@ -11,7 +11,7 @@ cd /Users/davidkao/Projects/Service
 dotnet build
 ```
 
-## Run
+## Docker Run
 
 ```bash
 docker build -t service:latest .
@@ -20,26 +20,15 @@ docker run -d --name my-service -p 7071:8081 -p 7070:8080 -v "$(pwd)/src/Service
 
 docker rm -f container_name
 ```
--f (force)
-run docker run at root 
-
+-f (force) run docker run at root 
 
 dotnet publish --os linux --configuration Release -t:PublishContainer
 
 docker run -d -p 7070:8080 service
-curl http://localhost:7070/weatherforecast
-
-find out how to enable Https in docker
-```
 
 ## API Endpoint
-
-The app includes a sample weather forecast controller.
-
-Example request:
-
 ```bash
-curl https://localhost:7071/weatherforecast
+curl https://localhost:7071/weatherforecast -v
 ```
 
 ## Notes
@@ -61,8 +50,20 @@ docker stop (Graceful): Sends a SIGTERM signal. It asks the container nicely to 
 ```bash
 docker compose up -d
 docker compose down 
+
+docker compose down && docker compose up -d --build
+
+docker logs service-api
 ```
-docker compose down -v
+docker compose down -v. deletes all named and anonymous volumes attached to the services defined in your Docker Compose fileclear
+
+### How to Double-Check Your Setup
+
+If you want to verify that Docker Compose is pulling the password correctly before launching, you can render your evaluated compose file in your terminal:
+
+```bash
+docker compose config
+```
 
 ### Reference:
 🛠️ Core Slash Commands (/)These act as shortcuts so you don't have to write out long prompts. Just type  in the chat input to see them. 
@@ -90,4 +91,12 @@ You can use variables to explicitly attach specific pieces of context to your pr
 Pro-Tip for your .NET work: If you ever get an MSBuild or container publish error in your terminal, just pop open Copilot Chat and type:
 "@terminal /explain why my dotnet publish command failed" Copilot will read the exact error output and tell you how to fix it!
 
+### Postgre:
+Once you are on the dashboard, you need to register your database server:Click 
 
+Add New Server on the quick links dashboard (or right-click Servers in the left sidebar and choose Register > Server...)
+.In the General tab:Name: Type a friendly name for your connection (e.g., Local Dev DB).Click on the Connection tab and fill out the fields exactly like this:Host name/address: db (Crucial: You must use the Docker service name db, not localhost, because pgAdmin and the database are running inside the same Docker network) [^1, 2]Port: 5432 [^1]Maintenance database: Enter the value of your ${DB_NAME} variable from your .env file.Username: Enter the value of your ${DB_USER} variable from your .env file.Password: Enter the value of your ${DB_PW} variable from your .env file.Save password?: Check this box so you do not have to type it every time.
+
+```SQL
+SELECT version();
+```

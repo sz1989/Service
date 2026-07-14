@@ -63,6 +63,12 @@ If you want to verify that Docker Compose is pulling the password correctly befo
 
 ```bash
 docker compose config
+
+curl https://localhost/weatherforecast -v
+
+pgadmin: http://localhost:8080/login?next=/
+
+seq: http://localhost:5341
 ```
 
 ### Reference:

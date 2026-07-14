@@ -67,8 +67,22 @@ services:
     networks:
       - personnet
 
+  seq:
+    image: datalust/seq:latest
+    container_name: person-seq
+    environment:
+      - ACCEPT_EULA=Y  # Corrected to standard list format
+      - SEQ_FIRSTRUN_NOAUTHENTICATION=true  # Skips login security completely
+    ports:
+      - "5341:80"
+    volumes:
+      - seq_data:/data
+    networks:
+      - personnet
+
 volumes:
   db_data:
+  seq_data:
 
 networks:
   personnet:

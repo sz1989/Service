@@ -1,3 +1,6 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+
 namespace Service;
 
 public class Program
@@ -13,9 +16,10 @@ public class Program
 
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
         builder.Services.AddDbContext<Data.AppDbContext>(options => options.UseNpgsql(connectionString));
+        // ADD THE REQUIRED SERVICES HERE
+        builder.Services.AddHealthChecks();
         // Add services to the container.
         builder.Services.AddControllers();
-        // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
 
         var app = builder.Build();
@@ -35,6 +39,33 @@ public class Program
             app.UseAuthorization();
             app.MapControllers();
 
+            // /health (simple)
+            app.MapHealthChecks("/health");
+
+            // /health/details (JSON with entries)
+            app.MapHealthChecks("/health/details", new HealthCheckOptions
+            {
+                ResponseWriter = async (context, report) =>
+                {
+                    context.Response.ContentType = "application/json";
+
+                    var result = new
+                    {
+                        status = report.Status.ToString(),
+                        totalDuration = report.TotalDuration.TotalMilliseconds,
+                        checks = report.Entries.Select(e => new
+                        {
+                            name = e.Key,
+                            status = e.Value.Status.ToString(),
+                            duration = e.Value.Duration.TotalMilliseconds,
+                            description = e.Value.Description,
+                            data = e.Value.Data
+                        })
+                    };
+
+                    await context.Response.WriteAsync(JsonSerializer.Serialize(result));
+                }
+            });
             app.Run();
         }
         catch (Exception ex)

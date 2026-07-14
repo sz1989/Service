@@ -28,7 +28,7 @@ services:
       - personnet
       
   db:
-    image: postgres:latest
+    image: postgres:17
     container_name: postgres
     env_file: .env
     environment:

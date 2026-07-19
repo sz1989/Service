@@ -66,6 +66,10 @@ docker compose config
 
 curl https://localhost/weatherforecast -v
 
+curl -X POST https://localhost:7071/WeatherForecast/predict-salary \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Alice", "age": 25}'
+
 pgadmin: http://localhost:8080/login?next=/
 
 seq: http://localhost:5341

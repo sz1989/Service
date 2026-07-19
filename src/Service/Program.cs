@@ -1,5 +1,8 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Scalar.AspNetCore;
+using Microsoft.Extensions.ML;
+using Service.Models;
 
 namespace Service;
 
@@ -22,6 +25,21 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
 
+        // --- ML.NET model training + registration ---
+        var mlModelsDir = Path.Combine(builder.Environment.ContentRootPath, "MLModels");
+        var trainingDataPath = Path.Combine(mlModelsDir, "people.csv");
+        var modelPath = Path.Combine(mlModelsDir, "model.zip");
+
+        if (!File.Exists(modelPath))
+        {
+            Directory.CreateDirectory(mlModelsDir);
+            MLModels.ModelBuilder.TrainAndSaveModel(trainingDataPath, modelPath);
+        }
+
+        builder.Services.AddPredictionEnginePool<PersonData, PersonPrediction>()
+            .FromFile(modelName: "PersonSalaryModel", filePath: modelPath, watchForChanges: true);
+        // --- end ML.NET setup ---
+        
         var app = builder.Build();
 
         try
@@ -32,8 +50,13 @@ public class Program
             if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
+                app.MapScalarApiReference(options =>
+                {
+                    options.Title = "My Service API";
+                    options.Theme = ScalarTheme.Purple;
+                    options.DefaultHttpClient = new(ScalarTarget.CSharp, ScalarClient.HttpClient);
+                });
             }
-            // app.MapScalarApiReference();
 
             app.UseHttpsRedirection();
             app.UseAuthorization();
@@ -66,6 +89,12 @@ public class Program
                     await context.Response.WriteAsync(JsonSerializer.Serialize(result));
                 }
             });
+
+            app.MapGet("/widgets/{id}", (int id) => Results.Ok())
+                .WithName("GetWidget")
+                .WithSummary("Get a widget by id")
+                .WithDescription("Returns a single widget or 404 if not found.");
+
             app.Run();
         }
         catch (Exception ex)

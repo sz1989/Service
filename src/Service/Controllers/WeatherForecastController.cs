@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.ML;
-using Service.Models;
+using Service.Model;
 
 namespace Service.Controllers;
 
@@ -10,10 +10,10 @@ public class WeatherForecastController(
     ILogger<WeatherForecastController> logger,
     PredictionEnginePool<PersonData, PersonPrediction> predictionEnginePool) : ControllerBase
 {
-    private static readonly string[] Summaries = new[]
-    {
+    private static readonly string[] Summaries =
+    [
         "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-    };
+    ];
 
     private readonly ILogger<WeatherForecastController> _logger = logger;
     private readonly PredictionEnginePool<PersonData, PersonPrediction> _predictionEnginePool = predictionEnginePool;

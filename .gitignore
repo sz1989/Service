@@ -8,3 +8,4 @@ appsettings*.json
 *.userprefs
 .DS_Store
 certs/
+node_modules/

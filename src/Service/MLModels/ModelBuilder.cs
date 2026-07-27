@@ -13,13 +13,6 @@ public static class ModelBuilder
         //     trainingDataPath, hasHeader: true, separatorChar: ',');
 
         IDataView dataView = mlContext.Data.LoadFromEnumerable(GetSampleData());
-        // mlContext.Data.LoadFromEnumerable(new List<PersonData>
-        // {
-        //     new PersonData { Name = "Alice", Age = 30, Label = 1.0f },
-        //     new PersonData { Name = "Bob", Age = 25, Label = 0.0f },
-        //     new PersonData { Name = "Charlie", Age = 35, Label = 1.0f },
-        //     new PersonData { Name = "David", Age = 28, Label = 0.0f }
-        // });
 
         var pipeline = mlContext.Transforms.Categorical.OneHotEncoding("NameEncoded", nameof(PersonData.Name))
             .Append(mlContext.Transforms.Concatenate("Features", "NameEncoded", nameof(PersonData.Age)))

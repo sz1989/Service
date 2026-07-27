@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 using Microsoft.Extensions.ML;
 using Service.Models;
+using Service.Tools;
 
 namespace Service;
 
@@ -17,6 +18,12 @@ public class Program
             .ReadFrom.Services(services)
             .Enrich.FromLogContext());
 
+        builder.Services.AddMcpServer()
+            .WithHttpTransport(op =>
+            {
+                op.Stateless = true;
+            }).WithTools<CustomerTools>();
+        
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
         builder.Services.AddDbContext<Data.AppDbContext>(options => options.UseNpgsql(connectionString));
         // ADD THE REQUIRED SERVICES HERE
@@ -62,6 +69,8 @@ public class Program
             app.UseAuthorization();
             app.MapControllers();
 
+            app.MapMcp("/mcp");
+            
             // /health (simple)
             app.MapHealthChecks("/health");
 

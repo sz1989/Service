@@ -1,0 +1,89 @@
+services:
+  api:
+    build:
+      # context: ./src/Service
+      dockerfile: dockerfile
+    container_name: service-api
+    env_file: .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      # Force Kestrel to listen on all interfaces inside the container
+      # Align these URLs with what your Dockerfile exposes
+      - ASPNETCORE_URLS=https://+:8081;http://+:8080
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certs/aspnetcore.pfx
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PW}
+    ports:
+      - "443:8081"
+      - "80:8080"
+    volumes:
+      # 4. CRUCIAL: Mounts your local certificate folder into the container
+      # For Mac/Linux host (replace with actual path if different)
+      - ./src/Service/certs:/app/certs:ro
+      # :ro flag stand for read-only, so the container cannot modify your local certs
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - personnet
+      
+  db:
+    image: postgres:17
+    container_name: postgres
+    env_file: .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PW}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - db_data:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped    
+    networks:
+      - personnet
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/login || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - personnet
+
+  seq:
+    image: datalust/seq:latest
+    container_name: person-seq
+    environment:
+      - ACCEPT_EULA=Y  # Corrected to standard list format
+      - SEQ_FIRSTRUN_NOAUTHENTICATION=true  # Skips login security completely
+    ports:
+      - "5341:80"
+    volumes:
+      - seq_data:/data
+    networks:
+      - personnet
+
+volumes:
+  db_data:
+  seq_data:
+
+networks:
+  personnet:
+    driver: bridge

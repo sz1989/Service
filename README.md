@@ -60,7 +60,7 @@ curl https://localhost/weatherforecast -v
 
 curl https://localhost/Person/2 -v
 
-curl -X POST https://localhost:7071/WeatherForecast/predict-salary \
+curl -X POST https://localhost:7071/Prediction/predict-salary \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice", "age": 25}'
 

@@ -9,3 +9,4 @@ appsettings*.json
 .DS_Store
 certs/
 node_modules/
+.env

@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../Model/Model.csproj" />
+    <ProjectReference Include="../Model/Model.csproj" />
   </ItemGroup>
 
 </Project>

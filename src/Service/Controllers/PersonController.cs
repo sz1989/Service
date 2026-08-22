@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Service.Model;
 
 namespace Service.Controllers;
 
+[Authorize]
 [ApiController, Route("[controller]")]
 public class PersonController(ILogger<PersonController> logger,
     IPersonRepository personRepo) : ControllerBase

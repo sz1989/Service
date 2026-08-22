@@ -53,9 +53,12 @@ docker compose down -v. deletes all named and anonymous volumes attached to the 
 
 If you want to verify that Docker Compose is pulling the password correctly before launching, you can render your evaluated compose file in your terminal:
 
+curl -k -H is used to send a web request to a server while ignoring insecure SSL certificate warnings and adding custom headers
+
 ```bash
 docker compose config
 
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/weatherforecast -v
 curl https://localhost/weatherforecast -v
 
 curl https://localhost/Person/2 -v

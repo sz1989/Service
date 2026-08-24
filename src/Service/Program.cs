@@ -33,6 +33,8 @@ public class Program
         
         // ADD THE REQUIRED SERVICES HERE
         builder.Services.AddHealthChecks();
+        builder.Services.AddSingleton<Services.IBackgroundTaskQueue>(_ => new Services.BackgroundTaskQueue(capacity: 100));
+        builder.Services.AddHostedService<Services.AppBackgroundService>();
         // Add services to the container.
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();

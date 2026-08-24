@@ -12,7 +12,7 @@ internal static class Utility
 
             if (seen.TryGetValue(complement, out int matchIndex))
             {
-                return new[] { matchIndex, i };
+                return [matchIndex, i];
             }
 
             seen[nums[i]] = i;

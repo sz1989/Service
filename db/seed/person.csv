@@ -1,0 +1,11 @@
+name,date_of_birth,manager_id,salary
+Emma Smith,1990-05-14,,150000.00
+Liam Johnson,1985-11-22,1,95000.00
+Olivia Williams,1993-02-08,1,98000.00
+Noah Brown,2001-07-31,2,72000.00
+Ava Jones,1988-12-05,2,75000.00
+Oliver Miller,1995-04-19,3,68000.00
+Sophia Davis,2003-09-12,3,71000.00
+Elijah Garcia,1991-01-25,1,90000.00
+Isabella Rodriguez,1997-06-03,8,65000.00
+James Wilson,1982-10-17,8,67000.00

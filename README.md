@@ -58,10 +58,12 @@ curl -k -H is used to send a web request to a server while ignoring insecure SSL
 ```bash
 docker compose config
 
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/weatherforecast -v
-curl https://localhost/weatherforecast -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/weatherforecast -v   
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/2 -v  
 
-curl https://localhost/Person/2 -v
+# docker
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/weatherforecast -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/Person/2 -v  
 
 curl -X POST https://localhost:7071/Prediction/predict-salary \
   -H "Content-Type: application/json" \
@@ -115,28 +117,3 @@ Add New Server on the quick links dashboard (or right-click Servers in the left 
 ```SQL
 SELECT version();
 ```
-
-```Seeding SQL
--- 1. Create the table matching the .NET Person object
-CREATE TABLE IF NOT EXISTS person (
-    id SERIAL PRIMARY KEY, -- Generates unique auto-incrementing IDs
-    name VARCHAR(100) NOT NULL,
-    date_of_birth DATE NOT NULL
-);
-
--- 2. Insert 10 rows of mock data
-INSERT INTO person (name, date_of_birth) 
-VALUES 
-    ('Emma Smith', '1990-05-14'),
-    ('Liam Johnson', '1985-11-22'),
-    ('Olivia Williams', '1993-02-08'),
-    ('Noah Brown', '2001-07-31'),
-    ('Ava Jones', '1988-12-05'),
-    ('Oliver Miller', '1995-04-19'),
-    ('Sophia Davis', '2003-09-12'),
-    ('Elijah Garcia', '1991-01-25'),
-    ('Isabella Rodriguez', '1997-06-03'),
-    ('James Wilson', '1982-10-17');
-```
-
-

@@ -37,6 +37,9 @@ services:
       - POSTGRES_DB=${DB_NAME}
     volumes:
       - db_data:/var/lib/postgresql
+      # postgres auto-runs any .sql/.sql.gz/.sh files in here, in alphabetical order, but only the first time the container starts against an empty db_data volume.
+      - ./db/init:/docker-entrypoint-initdb.d:ro      
+      - ./db/seed:/seed:ro
     ports:
       - "5432:5432"
     healthcheck:

@@ -23,6 +23,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(p => p.DateOfBirth).HasColumnName("date_of_birth")
                 .IsRequired();
+
+            entity.Property(p => p.ManagerId).HasColumnName("manager_id");
+
+            entity.Property(p => p.Salary).HasColumnName("salary")
+                .IsRequired()
+                .HasColumnType("numeric(10, 2)");
         });
     }
 }

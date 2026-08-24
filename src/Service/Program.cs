@@ -1,5 +1,8 @@
+using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Microsoft.Extensions.ML;
 using Service.Tools;
@@ -30,9 +33,35 @@ public class Program
         
         // ADD THE REQUIRED SERVICES HERE
         builder.Services.AddHealthChecks();
+        builder.Services.AddSingleton<Services.IBackgroundTaskQueue>(_ => new Services.BackgroundTaskQueue(capacity: 100));
+        builder.Services.AddHostedService<Services.AppBackgroundService>();
         // Add services to the container.
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
+
+        // --- JWT bearer authentication ---
+        var jwtSection = builder.Configuration.GetSection("Jwt");
+        var jwtKey = jwtSection["Key"]
+            ?? throw new InvalidOperationException("Jwt:Key configuration is required.");
+
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtSection["Issuer"],
+                    ValidateAudience = true,
+                    ValidAudience = jwtSection["Audience"],
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(1)
+                };
+            });
+
+        builder.Services.AddAuthorization();
+        // --- end JWT bearer authentication ---
 
         // --- ML.NET model training + registration ---
         var mlModelsDir = Path.Combine(builder.Environment.ContentRootPath, "MLModels");
@@ -68,6 +97,7 @@ public class Program
             }
 
             app.UseHttpsRedirection();
+            app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
 

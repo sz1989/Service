@@ -60,6 +60,8 @@ services:
     ports:
       - "8080:80"
     restart: unless-stopped
+    volumes:
+      - ./db/query:/var/lib/pgadmin/storage/query:ro
     depends_on:
       - db
     healthcheck:

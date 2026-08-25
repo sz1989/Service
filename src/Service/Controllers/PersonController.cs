@@ -16,7 +16,18 @@ public class PersonController(ILogger<PersonController> logger,
     {
         logger.LogInformation("Getting person {id}", id);
         var p = await personRepo.GetPersonByIdAsync(id);
+        if (!p.Any())
+        {
+            return NotFound();
+        }
         return Ok(p);
+    }
+
+    [HttpGet("All")]
+    public async Task<ActionResult<IEnumerable<Person>>> GetAllPersons()
+    {
+        // test global exception handling by throwing an exception here
+        throw new NotImplementedException("GetAllPersons is not implemented yet.");
     }
 
     [HttpPost("{id}/refresh")]

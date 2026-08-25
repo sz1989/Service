@@ -32,8 +32,11 @@ public class Program
         builder.Services.AddTransient<IPersonRepository, PersonRepository>();
         
         // ADD THE REQUIRED SERVICES HERE
+        builder.Services.AddExceptionHandler<ErrorHandling.GlobalExceptionHandler>();
+        builder.Services.AddProblemDetails();
         builder.Services.AddHealthChecks();
         builder.Services.AddSingleton<Services.IBackgroundTaskQueue>(_ => new Services.BackgroundTaskQueue(capacity: 100));
+        builder.Services.AddHttpClient();
         builder.Services.AddHostedService<Services.AppBackgroundService>();
         // Add services to the container.
         builder.Services.AddControllers();
@@ -74,8 +77,7 @@ public class Program
             MLModels.ModelBuilder.TrainAndSaveModel(trainingDataPath, modelPath);
         }
 
-        builder.Services.AddPredictionEnginePool<PersonData, PersonPrediction>()
-            .FromFile(modelName: "PersonSalaryModel", filePath: modelPath, watchForChanges: true);
+        builder.Services.AddPredictionEnginePool<PersonData, PersonPrediction>().FromFile(modelName: "PersonSalaryModel", filePath: modelPath, watchForChanges: true);
         // --- end ML.NET setup ---
         
         var app = builder.Build();
@@ -83,6 +85,8 @@ public class Program
         try
         {
             Log.Information("Starting web host");
+
+            app.UseExceptionHandler();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

@@ -11,6 +11,7 @@ public class PersonController(ILogger<PersonController> logger,
     IPersonRepository personRepo,
     IBackgroundTaskQueue taskQueue) : ControllerBase
 {
+    [Authorize(Roles = "admin, user")]
     [HttpGet("{id}")]
     public async Task<ActionResult<Person>> GetPerson(int id)
     {
@@ -23,6 +24,7 @@ public class PersonController(ILogger<PersonController> logger,
         return Ok(p);
     }
 
+    [Authorize(Roles = "admin")]
     [HttpGet("All")]
     public async Task<ActionResult<IEnumerable<Person>>> GetAllPersons()
     {
@@ -30,6 +32,7 @@ public class PersonController(ILogger<PersonController> logger,
         throw new NotImplementedException("GetAllPersons is not implemented yet.");
     }
 
+    [AllowAnonymous]
     [HttpPost("{id}/refresh")]
     public async Task<IActionResult> RefreshPerson(int id)
     {

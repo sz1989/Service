@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Microsoft.Extensions.ML;
 using Service.Tools;
+using StackExchange.Redis;
 
 namespace Service;
 
@@ -34,7 +35,21 @@ public class Program
         // ADD THE REQUIRED SERVICES HERE
         builder.Services.AddExceptionHandler<ErrorHandling.GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();
-        builder.Services.AddHealthChecks();
+
+        var redisConnectionString = builder.Configuration.GetConnectionString("Redis") ?? throw new InvalidOperationException("ConnectionStrings:Redis configuration is required.");
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConnectionString;
+        });
+
+        builder.Services.AddHealthChecks().AddRedis(redisConnectionString, name: "redis");
+
+        // --- Redis pub/sub (cross-service notifications) ---
+        builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnectionString));
+        builder.Services.AddSingleton<Services.IRedisPublisher, Services.RedisPublisher>();
+        builder.Services.AddHostedService<Services.PersonNotificationSubscriberService>();
+        // --- end Redis pub/sub ---
+
         builder.Services.AddSingleton<Services.IBackgroundTaskQueue>(_ => new Services.BackgroundTaskQueue(capacity: 100));
         builder.Services.AddHttpClient();
         builder.Services.AddHostedService<Services.AppBackgroundService>();

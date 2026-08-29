@@ -31,6 +31,31 @@ jobs:
     - name: Build Project
       run: dotnet build ./Service.slnx --configuration Release --no-restore
 
-    # Step 5: Execute unit tests (if you have a test project in the solution)
+    # Step 5: Execute unit tests and collect code coverage
     - name: Run Tests
-      run: dotnet test ./Service.slnx --configuration Release --no-restore --no-build
+      run: >
+        dotnet test ./Service.slnx --configuration Release --no-restore --no-build
+        --collect:"XPlat Code Coverage"
+        --results-directory ./coverage
+
+    # Step 6: Turn the raw Cobertura output into a human-readable report + summary
+    - name: Generate Coverage Report
+      if: always()
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.4.4
+      with:
+        reports: ./coverage/**/coverage.cobertura.xml
+        targetdir: ./coverage/report
+        reporttypes: 'Html;MarkdownSummaryGithub'
+
+    # Step 7: Show the coverage summary on the workflow run page
+    - name: Publish Coverage Summary
+      if: always()
+      run: cat ./coverage/report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
+    # Step 8: Keep the full HTML coverage report as a downloadable artifact
+    - name: Upload Coverage Report Artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: ./coverage/report

@@ -82,9 +82,9 @@ public static class ServiceCollectionExtensions
             {
                 var problemDetails = new ProblemDetails
                 {
+                    // Type = "https://tools.ietf.org/html/rfc6585#section-4"
                     Status = StatusCodes.Status429TooManyRequests,
                     Title = "Too many requests.",
-                    Type = "https://tools.ietf.org/html/rfc6585#section-4"
                 };
 
                 context.HttpContext.Response.StatusCode = problemDetails.Status.Value;
@@ -148,11 +148,10 @@ public static class ServiceCollectionExtensions
         if (!File.Exists(modelPath))
         {
             Directory.CreateDirectory(mlModelsDir);
-            Service.MLModels.ModelBuilder.TrainAndSaveModel(trainingDataPath, modelPath);
+            MLModels.ModelBuilder.TrainAndSaveModel(trainingDataPath, modelPath);
         }
 
-        services.AddPredictionEnginePool<PersonData, PersonPrediction>()
-            .FromFile(modelName: "PersonSalaryModel", filePath: modelPath, watchForChanges: true);
+        services.AddPredictionEnginePool<PersonData, PersonPrediction>().FromFile(modelName: "PersonSalaryModel", filePath: modelPath, watchForChanges: true);
 
         return services;
     }

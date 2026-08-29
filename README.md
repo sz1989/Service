@@ -21,6 +21,8 @@ cd /Users/davidkao/Projects/Service
 docker compose down && docker compose up -d --build
 
 docker logs service-api
+
+docker compose up -d redis # to run redis and any servcies it depends_on
 ```
 
 # Additional Reference

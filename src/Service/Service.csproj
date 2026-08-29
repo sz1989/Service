@@ -39,4 +39,8 @@
     <ProjectReference Include="../Model/Model.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Service.Tests" />
+  </ItemGroup>
+
 </Project>

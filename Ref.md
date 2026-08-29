@@ -41,6 +41,18 @@ docker logs service-api
 ```
 docker compose down -v. deletes all named and anonymous volumes attached to the services defined in your Docker Compose fileclear
 
+### To run Redis Only
+docker compose up -d redis
+
+This starts only redis (and any services it depends_on), leaving the rest of the compose file untouched. A few related variants:
+
+- docker compose up redis — same, but runs in the foreground (attached, streaming logs).
+- docker compose start redis — starts an already-created container without recreating it (won't pick up config/image changes).
+- docker compose restart redis — restarts just that service.
+- docker compose stop redis — stops just that service without removing it.
+- docker compose logs -f redis — tail logs for just that service.
+###
+
 ### How to Double-Check Your Setup
 
 If you want to verify that Docker Compose is pulling the password correctly before launching, you can render your evaluated compose file in your terminal:
@@ -66,6 +78,9 @@ curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://loca
 curl -X POST https://localhost:7071/Prediction/predict-salary \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice", "age": 25}'
+
+# Resilience
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)"https://localhost:7071/Resilience -v
 
 pgadmin: http://localhost:8080/login?next=/
 

@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
+using Service.Data;
 using Service.Model;
 using Service.Services;
 
@@ -13,7 +14,8 @@ public class PersonController(ILogger<PersonController> logger,
     IPersonRepository personRepo,
     IBackgroundTaskQueue taskQueue,
     IDistributedCache cache,
-    IRedisPublisher publisher) : ControllerBase
+    IRedisPublisher publisher,
+    IServiceScopeFactory scopeFactory) : ControllerBase
 {
     private static readonly DistributedCacheEntryOptions CacheEntryOptions = new()
     {
@@ -61,10 +63,11 @@ public class PersonController(ILogger<PersonController> logger,
     [HttpPost("{id}/refresh")]
     public async Task<IActionResult> RefreshPerson(int id)
     {
-        await taskQueue.QueueBackgroundWorkItemAsync(async token =>
+        await taskQueue.QueueBackgroundWorkItemAsync(async (scope, token) =>
         {
             logger.LogInformation("Background refresh started for person {id}", id);
-            var p = await personRepo.GetPersonByIdAsync(id);
+            var dbContext = scope!.GetRequiredService<AppDbContext>();
+            var p = await dbContext.Persons.FindAsync([id], token);
             // ... do the actual refresh work with p here ...
 
             await cache.RemoveAsync(PersonCacheKey(id), token);
@@ -73,7 +76,7 @@ public class PersonController(ILogger<PersonController> logger,
             await publisher.PublishAsync(RedisChannels.PersonUpdates, notification);
 
             logger.LogInformation("Background refresh completed for person {id}", id);
-        });
+        }, scopeFactory);
 
         return Accepted();  //202
     }

@@ -22,3 +22,7 @@ docker compose down && docker compose up -d --build
 
 docker logs service-api
 ```
+
+# Additional Reference
+
+See [Ref.md](Ref.md) for additional reference commands (Docker build/run, publish, copilot).

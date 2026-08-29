@@ -52,7 +52,11 @@ docker compose config
 
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/weatherforecast -v   
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/2 -v  
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh admin)" https://localhost/Person/1 -v  # JWT with role: admin
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh foo)" https://localhost/Person/1 -v # 403 forbidden 
+
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/All -v  # generating errors
+
 curl -X POST https://localhost:7071/Person/1/refresh -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" # test background service
 
 # docker

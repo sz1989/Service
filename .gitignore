@@ -10,3 +10,4 @@ obj/
 certs/
 node_modules/
 .env
+coverage/

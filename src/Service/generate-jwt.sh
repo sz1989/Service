@@ -2,13 +2,15 @@
 set -euo pipefail
 
 # Mints an HS256 JWT matching this service's dev auth config (Program.cs),
-# for local testing with curl. Not for use against real environments.
+# for local testing with curl. 
+# Not for use against real environments.
 
 JWT_KEY="${JWT_KEY:-dev-only-signing-key-do-not-use-in-production-32bytes+}"
 JWT_ISSUER="${JWT_ISSUER:-Service}"
 JWT_AUDIENCE="${JWT_AUDIENCE:-Service}"
 JWT_SUBJECT="${JWT_SUBJECT:-testuser}"
-JWT_ROLE="${JWT_ROLE:-user}"
+# The role can be passed as the first argument, or set via the JWT_ROLE env var, or defaults to "user".
+JWT_ROLE="${1:-${JWT_ROLE:-user}}"
 JWT_TTL_SECONDS="${JWT_TTL_SECONDS:-3600}"
 
 b64url() {

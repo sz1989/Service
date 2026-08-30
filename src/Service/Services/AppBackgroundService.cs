@@ -6,7 +6,7 @@ public class AppBackgroundService(ILogger<AppBackgroundService> logger, IBackgro
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var workItem = await taskQueue.DequeueAsync(stoppingToken);
+            var (workItem, scopeFactory) = await taskQueue.DequeueAsync(stoppingToken);
 
             try
             {
@@ -14,7 +14,15 @@ public class AppBackgroundService(ILogger<AppBackgroundService> logger, IBackgro
                 logger.LogInformation("Simulating deploy network latency (30s)...");
                 await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
 
-                await workItem(stoppingToken);
+                if (scopeFactory is not null)
+                {
+                    using var scope = scopeFactory.CreateScope();
+                    await workItem(scope.ServiceProvider, stoppingToken);
+                }
+                else
+                {
+                    await workItem(null, stoppingToken);
+                }
             }
             catch (Exception ex)
             {

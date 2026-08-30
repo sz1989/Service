@@ -21,4 +21,10 @@ cd /Users/davidkao/Projects/Service
 docker compose down && docker compose up -d --build
 
 docker logs service-api
+
+docker compose up -d redis # to run redis and any servcies it depends_on
 ```
+
+# Additional Reference
+
+See [Ref.md](Ref.md) for additional reference commands (Docker build/run, publish, copilot).

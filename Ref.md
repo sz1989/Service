@@ -1,8 +1,7 @@
 ## Generate the certificate
 
 ```bash
-cd /Users/davidkao/Projects/Service
-./generate-cert.sh
+./generate-cert.sh  # Generate the certificate under src/Service
 ```
 
 ## Docker Run
@@ -75,12 +74,13 @@ curl -X POST https://localhost:7071/Person/1/refresh -k -H "Authorization: Beare
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/weatherforecast -v
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/Person/2 -v  
 
-curl -X POST https://localhost:7071/Prediction/predict-salary \
+curl -k -X POST https://localhost:7071/Prediction/predict-salary \
+  -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice", "age": 25}'
 
 # Resilience
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)"https://localhost:7071/Resilience -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Resilience -v
 
 pgadmin: http://localhost:8080/login?next=/
 

@@ -150,4 +150,21 @@ internal static class Noted
 
         return sb.ToString();
     }
+
+    public static IEnumerable<(int faceValue, int count)> GetChange(int input)
+    {
+        var coins = new[] { 25, 10, 5, 1 };
+        var result = new List<(int faceValue, int count)>();
+    
+        foreach (var coin in coins)
+        {
+            int count = input / coin;
+            if (count > 0)
+            {
+                result.Add((coin, count));
+                input -= count * coin;
+            }
+        }
+        return result;
+    }
 }

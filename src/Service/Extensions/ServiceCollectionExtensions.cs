@@ -112,6 +112,33 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    public const string DefaultCorsPolicy = "DefaultCorsPolicy";
+
+    public static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration)
+    {
+        var corsSection = configuration.GetSection("Cors");
+        var allowedOrigins = corsSection.GetSection("AllowedOrigins").Get<string[]>() ?? [];
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy(DefaultCorsPolicy, policy =>
+            {
+                if (allowedOrigins.Length == 0)
+                {
+                    policy.AllowAnyOrigin();
+                }
+                else
+                {
+                    policy.WithOrigins(allowedOrigins).AllowCredentials();
+                }
+
+                policy.AllowAnyHeader().AllowAnyMethod();
+            });
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         var jwtSection = configuration.GetSection("Jwt");

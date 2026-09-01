@@ -5,6 +5,51 @@ namespace Service.Tests.Others;
 
 public class StationNamesTests
 {
+    [Fact]
+    public void ProcessTap_FirstTimeRider_ChargesStandardFare()
+    {
+        // Arrange
+        var calculator = new TransitFareCalculator();
+        string riderId = "RIDER_123";
+        decimal expectedFare = 2.90m;
+
+        // Act
+        decimal actualFare = calculator.ProcessTap(new MetroCard { Id = riderId });
+
+        // Assert
+        Assert.Equal(expectedFare, actualFare);
+    }
+
+    [Fact]
+    public void ProcessTap_MultipleRides_AccumulatesChargesCorrectly()
+    {
+        // Arrange
+        var calculator = new TransitFareCalculator();
+        string riderId = "COMMUTER_ABC";
+
+        // Act & Assert
+        // 11 rides at $2.90 = $31.90
+        // 12th 2.1
+        for (int i = 0; i < 14; i++)
+        {
+            decimal fare = calculator.ProcessTap(new MetroCard { Id = riderId });
+            if (i < 11)
+            {
+                Assert.Equal(2.90m, fare);
+            }
+            else if (i == 11)
+            {
+                // 12th ride should be free
+                Assert.Equal(2.1m, fare);
+            }
+            else
+            {
+                // After 12 rides, fare should be free
+                Assert.Equal(0.0m, fare);
+            }
+        }
+    }
+
     [Theory]
     [InlineData("34 St - Penn Station")]
     [InlineData("34th St-Penn Sta.")]

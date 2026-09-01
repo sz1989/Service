@@ -2,6 +2,45 @@ using System.Globalization;
 
 namespace Service.Others;
 
+public class MetroCard
+{
+    public required string Id { get; set; }
+}
+public class TransitFareCalculator
+{
+    private Dictionary<string, List<(DateTime swap, decimal price)>> _cache;
+
+    public TransitFareCalculator()
+    {
+        _cache = [];
+    }
+
+    public decimal ProcessTap(MetroCard card)
+    {
+        var actualPrice = 2.9m; // standard fare
+        if (_cache.TryGetValue(card.Id, out var entry))
+        {
+            DateTime aWeek = DateTime.UtcNow.AddDays(-7);
+            var weeklyTotal = entry.Where(e => e.swap >= aWeek).Sum(e => e.price);
+            if (weeklyTotal >= 34m)
+            {
+                // use cached price
+                entry.Add((DateTime.UtcNow, 0m)); // add a new entry with current timestamp and price 0
+                actualPrice = 0m; // free ride
+            }
+            else
+            {
+                actualPrice = Math.Min(34m - weeklyTotal, actualPrice);
+                entry.Add((DateTime.UtcNow, actualPrice)); // add a new entry with current timestamp and price 0
+            }
+        }
+        else
+        {
+            _cache[card.Id] = [(DateTime.UtcNow, actualPrice)]; // add a new entry with current timestamp and price 0
+        }
+        return actualPrice;
+    }
+}
 public static class Names
 {
     /// <summary>
@@ -257,7 +296,7 @@ public interface IMetroCard
     FareResult Evaluate(TapContext ctx, IFareSchedule schedule, ITransferPolicy transfers);
 }
 
-public class MetroCard : IMetroCard
+public class MetroCard2 : IMetroCard
 {
     public FareResult Evaluate(TapContext ctx, IFareSchedule schedule, ITransferPolicy transfers)
     {
@@ -272,8 +311,3 @@ public class MetroCard : IMetroCard
         }
     }
 }
-
-// public static main 
-// {
-            
-// }

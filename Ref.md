@@ -4,6 +4,20 @@
 ./generate-cert.sh  # Generate the certificate under src/Service
 ```
 
+## Endpoints
+
+| Route                          | Auth            | Description                                   |
+|--------------------------------|-----------------|----------------------------------------------|
+| `GET /Person/{id}`             | `admin`, `user` | Person by id, Redis cache-aside              |
+| `GET /Person/All`             | `admin`         | Demonstrates the global exception handler    |
+| `POST /Person/{id}/refresh`   | anonymous       | Queues background refresh + Redis pub/sub    |
+| `POST /Prediction/predict-salary` | any token   | ML.NET salary prediction                     |
+| `GET /Inventory/All`          | any token       | Inventory items from Postgres                |
+| `GET /Resilience`, `/Resilience/circuit-breaker`, `/Resilience/timeout` | any token | Polly retry / circuit-breaker / timeout demos |
+| `GET /WeatherForecast`        | any token       | Sample data                                  |
+| `GET /health`, `/health/details` | anonymous    | Liveness + Redis health check                |
+| `POST /mcp`                    | anonymous       | MCP server (`GetWeather` tool)               |
+
 ## Docker Run
 
 ```bash

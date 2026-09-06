@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -162,6 +163,24 @@ public static class ServiceCollectionExtensions
             });
 
         services.AddAuthorization();
+
+        return services;
+    }
+
+    public static IServiceCollection AddApiVersioningSupport(this IServiceCollection services)
+    {
+        services.AddApiVersioning(options =>
+        {
+            options.DefaultApiVersion = new ApiVersion(1, 0);
+            options.AssumeDefaultVersionWhenUnspecified = true;   // no version in URL => v1.0
+            options.ReportApiVersions = true;                     // adds api-supported-versions / api-deprecated-versions response headers
+        })
+        .AddMvc()          // wires versioning into the MVC/controller pipeline
+        .AddApiExplorer(options =>
+        {
+            options.GroupNameFormat = "'v'VVV";        // v1, v2, v1.1 ...
+            options.SubstituteApiVersionInUrl = true;  // replaces {version} token in generated docs
+        });
 
         return services;
     }

@@ -35,7 +35,7 @@ public class StationController(
         return Ok(filter);
     }
 
-    [HttpGet("{id:string}")]
+    [HttpGet("{id}")]
     public ActionResult<Station> GetStation(string id)
     {
         // url -> Stations/{id}
@@ -43,7 +43,7 @@ public class StationController(
         return Ok();
     }
 
-    [HttpGet("{id:string}/arrivals")]
+    [HttpGet("{id}/arrivals")]
     public IActionResult GetArrivals(string id)
     {
         // url -> Stations/{id}/arrivals

@@ -70,6 +70,9 @@ curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://loca
 
 curl -X POST https://localhost:7071/Person/1/refresh -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" # test background service
 
+# Same Person controller with versioning
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/V1/Person/2 -v
+
 # docker
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/weatherforecast -v
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/Person/2 -v  

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
@@ -9,7 +10,10 @@ using Service.Services;
 namespace Service.Controllers;
 
 [Authorize]
-[ApiController, Route("[controller]")]
+[ApiController]
+[ApiVersion(1.0)]
+[Route("[controller]")]                        // legacy, unversioned — remove after clients migrate
+[Route("v{version:apiVersion}/[controller]")]
 public class PersonController(ILogger<PersonController> logger,
     IPersonRepository personRepo,
     IBackgroundTaskQueue taskQueue,

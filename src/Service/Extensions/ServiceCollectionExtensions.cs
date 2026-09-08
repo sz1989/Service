@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -112,6 +113,33 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    public const string DefaultCorsPolicy = "DefaultCorsPolicy";
+
+    public static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration)
+    {
+        var corsSection = configuration.GetSection("Cors");
+        var allowedOrigins = corsSection.GetSection("AllowedOrigins").Get<string[]>() ?? [];
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy(DefaultCorsPolicy, policy =>
+            {
+                if (allowedOrigins.Length == 0)
+                {
+                    policy.AllowAnyOrigin();
+                }
+                else
+                {
+                    policy.WithOrigins(allowedOrigins).AllowCredentials();
+                }
+
+                policy.AllowAnyHeader().AllowAnyMethod();
+            });
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         var jwtSection = configuration.GetSection("Jwt");
@@ -135,6 +163,34 @@ public static class ServiceCollectionExtensions
             });
 
         services.AddAuthorization();
+
+        return services;
+    }
+
+    public static IServiceCollection AddApiVersioningSupport(this IServiceCollection services)
+    {
+        services.AddApiVersioning(options =>
+        {
+            options.DefaultApiVersion = new ApiVersion(1, 0);
+            options.AssumeDefaultVersionWhenUnspecified = true;   // no version in URL => v1.0
+            options.ReportApiVersions = true;                     // adds api-supported-versions / api-deprecated-versions response headers
+        })
+        .AddMvc()          // wires versioning into the MVC/controller pipeline
+        .AddApiExplorer(options =>
+        {
+            // Calling "AddApiExplorer" is required for OpenAPI versioning to work correctly.
+            // Without this, the generated OpenAPI documents will not be versioned.
+
+            // GroupNameFormat specifies the format of the API version.
+            // Without this, versioning will use the literal group names. In our case, that would be 1.0.
+            // For compatibility with the "default" /openapi/v1.json behavior from Microsoft.AspNetCore.OpenApi, we use v'VVV' so we can retrieve it using v1.json.
+            // See https://github.com/dotnet/aspnet-api-versioning/wiki/Version-Format#custom-api-version-format-strings for more information about formatting API versions.
+            options.GroupNameFormat = "'v'VVV";        // v1, v2, v1.1 ...
+            options.SubstituteApiVersionInUrl = true;  // replaces {version} token in generated docs
+        })
+        // Asp.Versioning.OpenApi's variant — replaces the standalone Microsoft.AspNetCore.OpenApi
+        // AddOpenApi() and makes the generated documents version-aware. Call it once here, not per version.
+        .AddOpenApi();
 
         return services;
     }

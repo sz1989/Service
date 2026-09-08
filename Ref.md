@@ -4,6 +4,20 @@
 ./generate-cert.sh  # Generate the certificate under src/Service
 ```
 
+## Endpoints
+
+| Route                          | Auth            | Description                                   |
+|--------------------------------|-----------------|----------------------------------------------|
+| `GET /Person/{id}`             | `admin`, `user` | Person by id, Redis cache-aside              |
+| `GET /Person/All`             | `admin`         | Demonstrates the global exception handler    |
+| `POST /Person/{id}/refresh`   | anonymous       | Queues background refresh + Redis pub/sub    |
+| `POST /Prediction/predict-salary` | any token   | ML.NET salary prediction                     |
+| `GET /Inventory/All`          | any token       | Inventory items from Postgres                |
+| `GET /Resilience`, `/Resilience/circuit-breaker`, `/Resilience/timeout` | any token | Polly retry / circuit-breaker / timeout demos |
+| `GET /WeatherForecast`        | any token       | Sample data                                  |
+| `GET /health`, `/health/details` | anonymous    | Liveness + Redis health check                |
+| `POST /mcp`                    | anonymous       | MCP server (`GetWeather` tool)               |
+
 ## Docker Run
 
 ```bash
@@ -61,7 +75,9 @@ curl -k -H is used to send a web request to a server while ignoring insecure SSL
 ```bash
 docker compose config
 
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/weatherforecast -v   
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/weatherforecast -v  
+
+# Person Endpoint
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/2 -v  
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh admin)" https://localhost/Person/1 -v  # JWT with role: admin
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh foo)" https://localhost/Person/1 -v # 403 forbidden 
@@ -69,6 +85,10 @@ curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh foo)" https://
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/All -v  # generating errors
 
 curl -X POST https://localhost:7071/Person/1/refresh -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" # test background service
+
+# Same Person controller with versioning
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/V1/Person/2 -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/V2/Person/1 -v
 
 # docker
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/weatherforecast -v

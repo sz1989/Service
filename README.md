@@ -12,8 +12,8 @@ An ASP.NET Core 10 Web API for managing person records, secured with JWT bearer 
 [![EF Core](https://img.shields.io/badge/EF%20Core-10.0-512BD4)](https://learn.microsoft.com/ef/core/) [![Npgsql](https://img.shields.io/badge/Npgsql-PostgreSQL%20Provider-316192?logo=postgresql&logoColor=white)](https://www.npgsql.org/efcore/) [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-316192?logo=postgresql&logoColor=white)](https://www.postgresql.org/) [![pgAdmin](https://img.shields.io/badge/pgAdmin-4-326690?logo=postgresql&logoColor=white)](https://www.pgadmin.org/)  
 [![Redis](https://img.shields.io/badge/Redis-Latest-DC382D?logo=redis&logoColor=white)](https://redis.io/) [![StackExchange.Redis](https://img.shields.io/badge/StackExchange.Redis-Pub%2FSub-DC382D?logo=redis&logoColor=white)](https://stackexchange.github.io/StackExchange.Redis/) [![Rate Limiting](https://img.shields.io/badge/Rate%20Limiting-Redis%20Distributed-DC382D)](https://github.com/cristipufu/aspnetcore-redis-rate-limiting) [![Docker](https://img.shields.io/badge/Docker-Compose%20%2F%20Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/) [![ML.NET](https://img.shields.io/badge/ML.NET-5.0-008080)](https://dotnet.microsoft.com/apps/machinelearning-ai/ml-dotnet)  
 [![JWT](https://img.shields.io/badge/JWT-Bearer%20Auth-000000?logo=jsonwebtokens&logoColor=white)](https://jwt.io/) [![RBAC](https://img.shields.io/badge/Authorization-Role--Based%20(RBAC)-6DB33F)](https://learn.microsoft.com/aspnet/core/security/authorization/roles) [![Health Checks](https://img.shields.io/badge/Health%20Checks-ASP.NET%20Core-6DB33F)](https://learn.microsoft.com/aspnet/core/host-and-deploy/health-checks)  
-[![Serilog](https://img.shields.io/badge/Serilog-Logging-4E0A80)](https://serilog.net/) [![Seq](https://img.shields.io/badge/Seq-Structured%20Logs-005A9C)](https://datalust.co/seq) [![OpenAPI](https://img.shields.io/badge/OpenAPI-Swagger-85EA2D?logo=swagger&logoColor=white)](https://swagger.io/) [![Scalar](https://img.shields.io/badge/Scalar-API%20Reference-1A1A1A)](https://scalar.com/) [![Model%20Context%20Protocol](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-00ADEF)](https://modelcontextprotocol.org/) [![Polly](https://img.shields.io/badge/Polly-Resilience-7B68EE)](https://www.pollydocs.org/)  
-[![xUnit](https://img.shields.io/badge/xUnit-Tests-CC2927?logo=xunit&logoColor=white)](https://xunit.net/) [![Coverlet](https://img.shields.io/badge/Coverlet-Code%20Coverage-CC2927)](https://github.com/coverlet-coverage/coverlet) [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions)
+[![Serilog](https://img.shields.io/badge/Serilog-Logging-4E0A80)](https://serilog.net/) [![Seq](https://img.shields.io/badge/Seq-Structured%20Logs-005A9C)](https://datalust.co/seq) [![OpenAPI](https://img.shields.io/badge/OpenAPI-Swagger-85EA2D?logo=swagger&logoColor=white)](https://swagger.io/) [![Scalar](https://img.shields.io/badge/Scalar-API%20Reference-1A1A1A)](https://scalar.com/) [![API Versioning](https://img.shields.io/badge/Asp.Versioning-API%20Versioning-512BD4)](https://github.com/dotnet/aspnet-api-versioning) [![Model%20Context%20Protocol](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-00ADEF)](https://modelcontextprotocol.org/) [![Polly](https://img.shields.io/badge/Polly-Resilience-7B68EE)](https://www.pollydocs.org/)  
+[![xUnit](https://img.shields.io/badge/xUnit-Tests-CC2927?logo=xunit&logoColor=white)](https://xunit.net/) [![Coverlet](https://img.shields.io/badge/Coverlet-Code%20Coverage-CC2927)](https://github.com/coverlet-coverage/coverlet) [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions) [![Central Package Management](https://img.shields.io/badge/NuGet-Central%20Package%20Management-004880?logo=nuget&logoColor=white)](https://learn.microsoft.com/nuget/consume-packages/central-package-management)
 
 ## Getting Started
 
@@ -51,6 +51,7 @@ Or run the API directly against Dockerized dependencies:
 
 ```bash
 docker compose up -d db redis
+
 dotnet run --project src/Service   # https://localhost:7071
 ```
 
@@ -60,7 +61,9 @@ dotnet run --project src/Service   # https://localhost:7071
 |------------------|-----------------------------|----------------------------------------|
 | API (HTTPS)      | https://localhost           | `443:8081` in Compose; `7071` via `dotnet run` |
 | API (HTTP)       | http://localhost            | `80:8080` in Compose; `7070` via `dotnet run`  |
-| Scalar API ref   | https://localhost/scalar/v1 | Development environment only            |
+| Scalar API ref   | https://localhost/scalar/v1, `/scalar/v2` | Development only; one page per API version |
+| OpenAPI JSON – v1 | https://localhost/openapi/v1.json | Development environment only            |
+| OpenAPI JSON – v2 | https://localhost/openapi/v2.json | Development environment only            |
 | Health           | https://localhost/health, `/health/details` |                        |
 | MCP endpoint     | https://localhost/mcp       | HTTP transport                          |
 | pgAdmin          | http://localhost:8080       | Login from `PGADMIN_*` in `.env`        |
@@ -79,20 +82,6 @@ Mint a dev HS256 token (optionally with a role) using the helper script:
 
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh admin)" https://localhost/Person/1
 ```
-
-## Endpoints
-
-| Route                          | Auth            | Description                                   |
-|--------------------------------|-----------------|----------------------------------------------|
-| `GET /Person/{id}`             | `admin`, `user` | Person by id, Redis cache-aside              |
-| `GET /Person/All`             | `admin`         | Demonstrates the global exception handler    |
-| `POST /Person/{id}/refresh`   | anonymous       | Queues background refresh + Redis pub/sub    |
-| `POST /Prediction/predict-salary` | any token   | ML.NET salary prediction                     |
-| `GET /Inventory/All`          | any token       | Inventory items from Postgres                |
-| `GET /Resilience`, `/Resilience/circuit-breaker`, `/Resilience/timeout` | any token | Polly retry / circuit-breaker / timeout demos |
-| `GET /WeatherForecast`        | any token       | Sample data                                  |
-| `GET /health`, `/health/details` | anonymous    | Liveness + Redis health check                |
-| `POST /mcp`                    | anonymous       | MCP server (`GetWeather` tool)               |
 
 ## Testing
 

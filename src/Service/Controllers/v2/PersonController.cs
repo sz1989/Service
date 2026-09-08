@@ -1,15 +1,18 @@
 using System.Text.Json;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
-using Service.Data;
 using Service.Model;
 using Service.Services;
 
-namespace Service.Controllers;
+namespace Service.Controllers.v2;
 
 [Authorize]
-[ApiController, Route("[controller]")]
+[ApiController]
+[ApiVersion(2.0)]
+[Route("[controller]")]                        // legacy, unversioned — remove after clients migrate
+[Route("v{version:apiVersion}/[controller]")]
 public class PersonController(ILogger<PersonController> logger,
     IPersonRepository personRepo,
     IBackgroundTaskQueue taskQueue,
@@ -29,7 +32,7 @@ public class PersonController(ILogger<PersonController> logger,
     [HttpGet("{id}")]
     public async Task<ActionResult<Person>> GetPerson(int id)
     {
-        logger.LogInformation("Getting person {id}", id);
+        logger.LogInformation("Getting person from V2 {id}", id);
 
         var cacheKey = PersonCacheKey(id);
         var cached = await cache.GetStringAsync(cacheKey);

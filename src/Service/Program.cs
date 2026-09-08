@@ -20,7 +20,8 @@ public class Program
         builder.Services.AddBackgroundProcessing();
         builder.Services.AddRateLimiting(builder.Configuration);
         builder.Services.AddControllers();
-        builder.Services.AddOpenApi();
+        builder.Services.AddApiVersioningSupport();
+        builder.Services.AddCorsPolicy(builder.Configuration);
         builder.Services.AddJwtAuthentication(builder.Configuration);
         builder.Services.AddMachineLearning(builder.Environment);
 

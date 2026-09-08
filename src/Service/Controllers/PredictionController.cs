@@ -6,7 +6,7 @@ namespace Service.Controllers;
 
 [Authorize]
 [ApiController, Route("[controller]")]
-public class PredictionController(ILogger<PersonController> logger,
+public class PredictionController(ILogger<PredictionController> logger,
         PredictionEnginePool<PersonData, PersonPrediction> predictionEnginePool): ControllerBase
 {
     // private readonly ILogger<WeatherForecastController> _logger = logger;

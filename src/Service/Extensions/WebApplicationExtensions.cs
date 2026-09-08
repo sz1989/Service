@@ -13,7 +13,7 @@ public static class WebApplicationExtensions
 
         if (app.Environment.IsDevelopment())
         {
-            app.MapOpenApi();
+            app.MapOpenApi().WithDocumentPerVersion();
             app.MapScalarApiReference(options =>
             {
                 options.Title = "My Service API";
@@ -23,6 +23,7 @@ public static class WebApplicationExtensions
         }
 
         app.UseHttpsRedirection();
+        app.UseCors(ServiceCollectionExtensions.DefaultCorsPolicy);
         app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();

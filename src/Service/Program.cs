@@ -22,7 +22,6 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddApiVersioningSupport();
         builder.Services.AddCorsPolicy(builder.Configuration);
-        builder.Services.AddOpenApi();
         builder.Services.AddJwtAuthentication(builder.Configuration);
         builder.Services.AddMachineLearning(builder.Environment);
 

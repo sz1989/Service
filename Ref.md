@@ -75,7 +75,9 @@ curl -k -H is used to send a web request to a server while ignoring insecure SSL
 ```bash
 docker compose config
 
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/weatherforecast -v   
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/weatherforecast -v  
+
+# Person Endpoint
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/2 -v  
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh admin)" https://localhost/Person/1 -v  # JWT with role: admin
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh foo)" https://localhost/Person/1 -v # 403 forbidden 
@@ -86,6 +88,7 @@ curl -X POST https://localhost:7071/Person/1/refresh -k -H "Authorization: Beare
 
 # Same Person controller with versioning
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/V1/Person/2 -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/V2/Person/1 -v
 
 # docker
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/weatherforecast -v

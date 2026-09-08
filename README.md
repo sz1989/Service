@@ -51,6 +51,7 @@ Or run the API directly against Dockerized dependencies:
 
 ```bash
 docker compose up -d db redis
+
 dotnet run --project src/Service   # https://localhost:7071
 ```
 
@@ -60,7 +61,9 @@ dotnet run --project src/Service   # https://localhost:7071
 |------------------|-----------------------------|----------------------------------------|
 | API (HTTPS)      | https://localhost           | `443:8081` in Compose; `7071` via `dotnet run` |
 | API (HTTP)       | http://localhost            | `80:8080` in Compose; `7070` via `dotnet run`  |
-| Scalar API ref   | https://localhost/scalar/v1 | Development environment only            |
+| Scalar API ref   | https://localhost/scalar/v1, `/scalar/v2` | Development only; one page per API version |
+| OpenAPI JSON – v1 | https://localhost/openapi/v1.json | Development environment only            |
+| OpenAPI JSON – v2 | https://localhost/openapi/v2.json | Development environment only            |
 | Health           | https://localhost/health, `/health/details` |                        |
 | MCP endpoint     | https://localhost/mcp       | HTTP transport                          |
 | pgAdmin          | http://localhost:8080       | Login from `PGADMIN_*` in `.env`        |

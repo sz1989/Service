@@ -178,9 +178,19 @@ public static class ServiceCollectionExtensions
         .AddMvc()          // wires versioning into the MVC/controller pipeline
         .AddApiExplorer(options =>
         {
+            // Calling "AddApiExplorer" is required for OpenAPI versioning to work correctly.
+            // Without this, the generated OpenAPI documents will not be versioned.
+
+            // GroupNameFormat specifies the format of the API version.
+            // Without this, versioning will use the literal group names. In our case, that would be 1.0.
+            // For compatibility with the "default" /openapi/v1.json behavior from Microsoft.AspNetCore.OpenApi, we use v'VVV' so we can retrieve it using v1.json.
+            // See https://github.com/dotnet/aspnet-api-versioning/wiki/Version-Format#custom-api-version-format-strings for more information about formatting API versions.
             options.GroupNameFormat = "'v'VVV";        // v1, v2, v1.1 ...
             options.SubstituteApiVersionInUrl = true;  // replaces {version} token in generated docs
-        });
+        })
+        // Asp.Versioning.OpenApi's variant — replaces the standalone Microsoft.AspNetCore.OpenApi
+        // AddOpenApi() and makes the generated documents version-aware. Call it once here, not per version.
+        .AddOpenApi();
 
         return services;
     }

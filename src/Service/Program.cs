@@ -1,10 +1,12 @@
+using Microsoft.Extensions.AI;
+using OllamaSharp;
 using Service.Extensions;
 
 namespace Service;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +14,11 @@ public class Program
             .ReadFrom.Configuration(context.Configuration)
             .ReadFrom.Services(services)
             .Enrich.FromLogContext());
+
+        builder.Services.AddSingleton(_ => new OllamaApiClient(
+            new Uri(builder.Configuration["Ollama:Endpoint"] ?? "http://localhost:11434"),
+            builder.Configuration["Ollama:Model"] ?? "llama3.2:1b"));
+        builder.Services.AddSingleton<IChatClient>(sp => sp.GetRequiredService<OllamaApiClient>());
 
         builder.Services.AddMcp();
         builder.Services.AddPersistence(builder.Configuration);
@@ -41,7 +48,7 @@ public class Program
                 .WithSummary("Get a widget by id")
                 .WithDescription("Returns a single widget or 404 if not found.");
 
-            app.Run();
+            await app.RunAsync();
         }
         catch (Exception ex)
         {

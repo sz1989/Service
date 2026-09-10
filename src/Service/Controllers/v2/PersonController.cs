@@ -1,7 +1,5 @@
 using System.Text.Json;
 using Asp.Versioning;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using Service.Model;
 using Service.Services;
@@ -58,8 +56,7 @@ public class PersonController(ILogger<PersonController> logger,
     [HttpGet("All")]
     public async Task<ActionResult<IEnumerable<Person>>> GetAllPersons()
     {
-        // test global exception handling by throwing an exception here
-        throw new NotImplementedException("GetAllPersons is not implemented yet.");
+        return Ok(await personRepo.GetAllAsync());
     }
 
     [AllowAnonymous]

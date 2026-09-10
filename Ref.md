@@ -107,12 +107,9 @@ pgadmin: http://localhost:8080/login?next=/
 seq: http://localhost:5341
 ```
 
-## Test MCP Inspector
-```
-npm i @modelcontextprotocol/inspector
-npx @modelcontextprotocol/inspector
-```
-for Http, inspector only works on Http
+## AI commands
+
+See [AiRef.md](AiRef.md) for the chat endpoint (Ollama), ML.NET salary prediction, and MCP server / Inspector commands.
 
 ### Copolit Reference:
 🛠️ Core Slash Commands (/)These act as shortcuts so you don't have to write out long prompts. Just type  in the chat input to see them. 

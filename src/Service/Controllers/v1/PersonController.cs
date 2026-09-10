@@ -1,7 +1,5 @@
 using System.Text.Json;
 using Asp.Versioning;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using Service.Model;
 using Service.Services;

@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Polly;
 using Polly.CircuitBreaker;
 using Polly.Retry;

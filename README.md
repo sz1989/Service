@@ -1,16 +1,17 @@
-# Service
+# Restful Service in .NET
 
 [![Build](https://github.com/sz1989/Service/actions/workflows/dotnet-build.yml/badge.svg)](https://github.com/sz1989/Service/actions/workflows/dotnet-build.yml)
 
 ## About
 
-An ASP.NET Core 10 Web API for managing person records, secured with JWT bearer auth and role-based authorization. Person data is persisted in PostgreSQL (via EF Core) and cached in Redis, with Redis pub/sub used to broadcast update notifications to other services. The service also exposes an ML.NET-powered salary prediction endpoint, a Model Context Protocol (MCP) server, a background task queue for async work, and Polly-based resilience policies. It runs as a set of Docker Compose services (API, Postgres, Redis, pgAdmin, Seq) for local development.
+An ASP.NET Core 10 Web API for managing person records, secured with JWT bearer auth and role-based authorization. Person data is persisted in PostgreSQL (via EF Core) and cached in Redis, with Redis pub/sub used to broadcast update notifications to other services. The service also exposes an LLM chat endpoint (`Microsoft.Extensions.AI` `IChatClient` backed by a local Ollama model), an ML.NET-powered salary prediction endpoint, a Model Context Protocol (MCP) server, a background task queue for async work, and Polly-based resilience policies. It runs as a set of Docker Compose services (API, Postgres, Redis, pgAdmin, Seq) for local development.
 
 ## Tech Stack
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=.net&logoColor=white)](https://dotnet.microsoft.com/) [![C#](https://img.shields.io/badge/C%23-latest-239120?logo=csharp&logoColor=white)](https://learn.microsoft.com/dotnet/csharp/) [![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-10.0-6DB33F?logo=asp.net&logoColor=white)](https://dotnet.microsoft.com/apps/aspnet) [![BackgroundService](https://img.shields.io/badge/BackgroundService-Hosted%20Service-512BD4)](https://learn.microsoft.com/dotnet/core/extensions/workers)  
 [![EF Core](https://img.shields.io/badge/EF%20Core-10.0-512BD4)](https://learn.microsoft.com/ef/core/) [![Npgsql](https://img.shields.io/badge/Npgsql-PostgreSQL%20Provider-316192?logo=postgresql&logoColor=white)](https://www.npgsql.org/efcore/) [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-316192?logo=postgresql&logoColor=white)](https://www.postgresql.org/) [![pgAdmin](https://img.shields.io/badge/pgAdmin-4-326690?logo=postgresql&logoColor=white)](https://www.pgadmin.org/)  
 [![Redis](https://img.shields.io/badge/Redis-Latest-DC382D?logo=redis&logoColor=white)](https://redis.io/) [![StackExchange.Redis](https://img.shields.io/badge/StackExchange.Redis-Pub%2FSub-DC382D?logo=redis&logoColor=white)](https://stackexchange.github.io/StackExchange.Redis/) [![Rate Limiting](https://img.shields.io/badge/Rate%20Limiting-Redis%20Distributed-DC382D)](https://github.com/cristipufu/aspnetcore-redis-rate-limiting) [![Docker](https://img.shields.io/badge/Docker-Compose%20%2F%20Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/) [![ML.NET](https://img.shields.io/badge/ML.NET-5.0-008080)](https://dotnet.microsoft.com/apps/machinelearning-ai/ml-dotnet)  
+[![Microsoft.Extensions.AI](https://img.shields.io/badge/Microsoft.Extensions.AI-10.10-512BD4)](https://learn.microsoft.com/dotnet/ai/microsoft-extensions-ai) [![IChatClient](https://img.shields.io/badge/IChatClient-Chat%20Abstraction-512BD4)](https://learn.microsoft.com/dotnet/ai/microsoft-extensions-ai) [![Ollama](https://img.shields.io/badge/Ollama-Local%20LLM-000000?logo=ollama&logoColor=white)](https://ollama.com/) [![OllamaSharp](https://img.shields.io/badge/OllamaSharp-5.4-000000)](https://github.com/awaescher/OllamaSharp) [![Llama 3.2](https://img.shields.io/badge/Llama%203.2-1B-0866FF?logo=meta&logoColor=white)](https://ollama.com/library/llama3.2)  
 [![JWT](https://img.shields.io/badge/JWT-Bearer%20Auth-000000?logo=jsonwebtokens&logoColor=white)](https://jwt.io/) [![RBAC](https://img.shields.io/badge/Authorization-Role--Based%20(RBAC)-6DB33F)](https://learn.microsoft.com/aspnet/core/security/authorization/roles) [![Health Checks](https://img.shields.io/badge/Health%20Checks-ASP.NET%20Core-6DB33F)](https://learn.microsoft.com/aspnet/core/host-and-deploy/health-checks)  
 [![Serilog](https://img.shields.io/badge/Serilog-Logging-4E0A80)](https://serilog.net/) [![Seq](https://img.shields.io/badge/Seq-Structured%20Logs-005A9C)](https://datalust.co/seq) [![OpenAPI](https://img.shields.io/badge/OpenAPI-Swagger-85EA2D?logo=swagger&logoColor=white)](https://swagger.io/) [![Scalar](https://img.shields.io/badge/Scalar-API%20Reference-1A1A1A)](https://scalar.com/) [![API Versioning](https://img.shields.io/badge/Asp.Versioning-API%20Versioning-512BD4)](https://github.com/dotnet/aspnet-api-versioning) [![Model%20Context%20Protocol](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-00ADEF)](https://modelcontextprotocol.org/) [![Polly](https://img.shields.io/badge/Polly-Resilience-7B68EE)](https://www.pollydocs.org/)  
 [![xUnit](https://img.shields.io/badge/xUnit-Tests-CC2927?logo=xunit&logoColor=white)](https://xunit.net/) [![Coverlet](https://img.shields.io/badge/Coverlet-Code%20Coverage-CC2927)](https://github.com/coverlet-coverage/coverlet) [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions) [![Central Package Management](https://img.shields.io/badge/NuGet-Central%20Package%20Management-004880?logo=nuget&logoColor=white)](https://learn.microsoft.com/nuget/consume-packages/central-package-management)
@@ -50,7 +51,7 @@ docker compose up -d --build
 Or run the API directly against Dockerized dependencies:
 
 ```bash
-docker compose up -d db redis
+docker compose up -d db redis seq
 
 dotnet run --project src/Service   # https://localhost:7071
 ```
@@ -98,3 +99,5 @@ docker compose up -d redis   # run redis and any services it depends on
 ```
 
 See [Ref.md](Ref.md) for additional reference commands (Docker build/run, publish, pgAdmin setup, Copilot).
+
+See [AiRef.md](AiRef.md) for AI-related commands (Ollama chat endpoint, ML.NET salary prediction, MCP server / Inspector).

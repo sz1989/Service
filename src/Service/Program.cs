@@ -20,6 +20,7 @@ public class Program
             builder.Configuration["Ollama:Model"] ?? "llama3.2:1b"));
         builder.Services.AddSingleton<IChatClient>(sp => sp.GetRequiredService<OllamaApiClient>());
 
+        builder.Services.AddScannedServices();
         builder.Services.AddMcp();
         builder.Services.AddPersistence(builder.Configuration);
         builder.Services.AddErrorHandling();

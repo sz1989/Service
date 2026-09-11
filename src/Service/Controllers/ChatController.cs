@@ -1,4 +1,4 @@
-using Microsoft.Extensions.AI;
+using Service.BAL.Chat;
 
 namespace Service.Controllers;
 
@@ -6,7 +6,7 @@ namespace Service.Controllers;
 [ApiController, Route("[controller]")]
 public class ChatController(
     ILogger<ChatController> logger,
-    IChatClient chatClient) : ControllerBase
+    IChatService chatService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<string>> Ask([FromQuery] string question)
@@ -18,8 +18,8 @@ public class ChatController(
         }
 
         logger.LogInformation("Chat request: {Question}", question);
-        var response = await chatClient.GetResponseAsync(question);
+        var response = await chatService.AskAsync(question);
 
-        return Ok(response.Text);
+        return Ok(response);
     }
 }

@@ -1,15 +1,12 @@
-using Microsoft.Extensions.ML;
+using Service.BAL.Prediction;
 
 namespace Service.Controllers;
 
 [Authorize]
 [ApiController, Route("[controller]")]
 public class PredictionController(ILogger<PredictionController> logger,
-        PredictionEnginePool<PersonData, PersonPrediction> predictionEnginePool): ControllerBase
+        IPredictionService predictionService): ControllerBase
 {
-    // private readonly ILogger<WeatherForecastController> _logger = logger;
-    // private readonly PredictionEnginePool<PersonData, PersonPrediction> _predictionEnginePool = predictionEnginePool;
-
     [HttpPost("predict-salary", Name = "PredictSalaryByName")]
     public ActionResult<object> PredictSalary([FromBody] PersonSearchRequest request)
     {
@@ -18,16 +15,10 @@ public class PredictionController(ILogger<PredictionController> logger,
             return BadRequest("Name is required.");
         }
 
-        var input = new PersonData { Name = request.Name, Age = request.Age };
-        logger.LogInformation("Predicting salary for {Name}, Age: {Age}", request.Name, request.Age);
-        var prediction = predictionEnginePool.Predict(modelName: "PersonSalaryModel", example: input);
+        logger.LogInformation("Predict-salary request for {Name}, Age: {Age}", request.Name, request.Age);
+        var (name, age, predictedSalary) = predictionService.PredictSalary(request.Name, request.Age);
 
-        return Ok(new
-        {
-            request.Name,
-            request.Age,
-            prediction.PredictedSalary
-        });
+        return Ok(new { Name = name, Age = age, PredictedSalary = predictedSalary });
     }
 
     public record PersonSearchRequest(string Name, float Age = 0);

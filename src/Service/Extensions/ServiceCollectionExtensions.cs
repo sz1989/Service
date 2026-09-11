@@ -2,11 +2,11 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.ML;
 using Microsoft.IdentityModel.Tokens;
 using RedisRateLimiting;
+using Service;
 using Service.ErrorHandling;
 using Service.Services;
 using Service.Tools;
@@ -29,7 +29,24 @@ public static class ServiceCollectionExtensions
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
-        services.AddTransient<IPersonRepository, PersonRepository>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Scans this assembly and auto-registers every class that has exactly one implemented
+    /// interface matching its own name by convention (e.g. <c>PersonRepository</c> -> <c>IPersonRepository</c>).
+    /// Types that require a factory (e.g. constructor arguments not resolvable from DI) are excluded
+    /// and remain registered explicitly where they're configured.
+    /// </summary>
+    public static IServiceCollection AddScannedServices(this IServiceCollection services)
+    {
+        services.Scan(scan => scan
+            .FromAssemblyOf<Program>()
+            .AddClasses(classes => classes
+                .Where(type => type != typeof(BackgroundTaskQueue)), publicOnly: true)
+            .AsMatchingInterface()
+            .WithScopedLifetime());
 
         return services;
     }
@@ -52,7 +69,6 @@ public static class ServiceCollectionExtensions
 
         // Pub/sub for cross-service notifications, backed by the same Redis instance as the cache.
         services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnectionString));
-        services.AddSingleton<IRedisPublisher, RedisPublisher>();
         services.AddHostedService<PersonNotificationSubscriberService>();
 
         return services;

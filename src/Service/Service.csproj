@@ -24,6 +24,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
     <PackageReference Include="OllamaSharp" />
     <PackageReference Include="RedisRateLimiting" />
+    <PackageReference Include="Scrutor" />
     <PackageReference Include="StackExchange.Redis" />
     <PackageReference Include="Microsoft.Extensions.ML" />
     <PackageReference Include="Microsoft.ML" />

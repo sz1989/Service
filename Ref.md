@@ -105,6 +105,13 @@ curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://loca
 pgadmin: http://localhost:8080/login?next=/
 
 seq: http://localhost:5341
+
+# list of process Ids that use 7071 port
+lsof -nP -iTCP:7071 -sTCP:LISTEN
+
+# kill the process
+kill [id]
+kill -g [id]
 ```
 
 ## AI commands

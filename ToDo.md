@@ -4,3 +4,6 @@ Build a Decorator pattern:
 using either Scrutor or build.Services.AddScope<I>
 
 add a SKILL.md
+
+
+Redesign CQRS with Milan https://milanjovanovic.tech/blog/cqrs-pattern-the-way-it-should-have-been-from-the-start

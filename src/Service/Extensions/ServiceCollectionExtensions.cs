@@ -7,6 +7,7 @@ using Microsoft.Extensions.ML;
 using Microsoft.IdentityModel.Tokens;
 using RedisRateLimiting;
 using Service;
+using Service.Authentication;
 using Service.ErrorHandling;
 using Service.Services;
 using Service.Tools;
@@ -156,13 +157,34 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    public const string ApiKeyScheme = "ApiKey";
+    private const string SmartAuthScheme = "SmartAuth";
+
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         var jwtSection = configuration.GetSection("Jwt");
         var jwtKey = jwtSection["Key"]
             ?? throw new InvalidOperationException("Jwt:Key configuration is required.");
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        var apiKeySection = configuration.GetSection("ApiKey");
+        var apiKeyHeaderName = apiKeySection["HeaderName"] ?? "X-Api-Key";
+
+        services.AddAuthentication(SmartAuthScheme)
+            // API key is checked first (header-based, no expiry) so the React client can use a
+            // hardcoded token; falls back to JWT bearer for the existing curl/generate-jwt.sh flow.
+            .AddPolicyScheme(SmartAuthScheme, "API key or JWT bearer", options =>
+            {
+                options.ForwardDefaultSelector = context =>
+                    context.Request.Headers.ContainsKey(apiKeyHeaderName)
+                        ? ApiKeyScheme
+                        : JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(ApiKeyScheme, options =>
+            {
+                options.HeaderName = apiKeyHeaderName;
+                options.ApiKey = apiKeySection["Key"];
+                options.Roles = apiKeySection.GetSection("Roles").Get<string[]>() ?? ["admin", "user"];
+            })
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters

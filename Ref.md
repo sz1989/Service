@@ -78,7 +78,9 @@ docker compose config
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/weatherforecast -v  
 
 # Person Endpoint
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/2 -v  
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/2 -v
+curl -k -H "X-Api-Key: dev-only-api-token-do-not-use-in-production" https://localhost:7071/Person/2 -v
+
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh admin)" https://localhost/Person/1 -v  # JWT with role: admin
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh foo)" https://localhost/Person/1 -v # 403 forbidden 
 

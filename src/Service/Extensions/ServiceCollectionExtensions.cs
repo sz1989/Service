@@ -169,6 +169,8 @@ public static class ServiceCollectionExtensions
         var apiKeySection = configuration.GetSection("ApiKey");
         var apiKeyHeaderName = apiKeySection["HeaderName"] ?? "X-Api-Key";
 
+        services.Configure<AuthOptions>(configuration.GetSection("Auth"));
+
         services.AddAuthentication(SmartAuthScheme)
             // API key is checked first (header-based, no expiry) so the React client can use a
             // hardcoded token; falls back to JWT bearer for the existing curl/generate-jwt.sh flow.

@@ -101,6 +101,14 @@ curl -k -X POST https://localhost:7071/Prediction/predict-salary \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice", "age": 25}'
 
+# Get Token from Auth/login
+TOKEN=$(curl -s https://localhost:7071/Auth/login -k \
+  -X POST -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
+
+curl -i https://localhost:7071/Person/1 -H "Authorization: Bearer $TOKEN"
+
 # Resilience
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Resilience -v
 

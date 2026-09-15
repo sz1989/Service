@@ -4,8 +4,12 @@ name: .NET Build and Test
 on:
   push:
     branches: [ "main", "develop", "feature/*" ] # Triggers on commits to these branches
+    paths-ignore:
+      - 'ui/**'
   pull_request:
     branches: [ "main" ]            # Triggers when a PR is opened against main
+    paths-ignore:
+      - 'ui/**'
 
 jobs:
   build:

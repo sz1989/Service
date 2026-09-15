@@ -1,0 +1,44 @@
+name: UI Build
+
+# This section controls automatically triggering the workflow
+on:
+  push:
+    branches: [ "main", "develop", "feature/*" ] # Triggers on commits to these branches
+    paths:
+      - 'ui/**'
+      - '.github/workflows/react-build.yml'
+  pull_request:
+    branches: [ "main" ]            # Triggers when a PR is opened against main
+    paths:
+      - 'ui/**'
+      - '.github/workflows/react-build.yml'
+
+jobs:
+  build:
+    name: Build UI
+    runs-on: ubuntu-latest # The cloud virtual machine type to use
+
+    defaults:
+      run:
+        working-directory: ui
+
+    steps:
+    # Step 1: Point GitHub to your repository and download the code
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # Step 2: Install Node.js and restore the npm cache
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: ui/package-lock.json
+
+    # Step 3: Install dependencies from the lockfile
+    - name: Install Dependencies
+      run: npm ci
+
+    # Step 4: Type-check and build (tsc -b && vite build)
+    - name: Build Project
+      run: npm run build

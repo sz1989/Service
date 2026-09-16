@@ -35,7 +35,10 @@ export function useFetch<T>(): UseFetchResult<T> {
         throw new ApiError(response.status, `Request to ${path} failed with status ${response.status}.`)
       }
 
-      const result = (await response.json()) as T
+      const contentType = response.headers.get('content-type') ?? ''
+      const result = (contentType.includes('application/json')
+        ? await response.json()
+        : await response.text()) as T
       setData(result)
       return result
     } catch (err) {

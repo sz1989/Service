@@ -1,6 +1,7 @@
 # Restful Service in .NET
 
 [![Build](https://github.com/sz1989/Service/actions/workflows/dotnet-build.yml/badge.svg)](https://github.com/sz1989/Service/actions/workflows/dotnet-build.yml)
+[![UI Build](https://github.com/sz1989/Service/actions/workflows/react-build.yml/badge.svg)](https://github.com/sz1989/Service/actions/workflows/react-build.yml)
 
 ## About
 
@@ -55,6 +56,27 @@ docker compose up -d db redis seq
 
 dotnet run --project src/Service   # https://localhost:7071
 ```
+
+### 4. Or start everything with `start.sh`
+
+`start.sh` automates the steps above plus the React UI: it starts the Dockerized
+dependencies (`db`, `redis`, `seq`), runs the API (`dotnet run --project src/Service`)
+in the background, then runs the UI dev server (`npm install` on first run, then
+`npm run dev`) in the foreground.
+
+```bash
+./start.sh              # docker deps + API + UI (http://localhost:3000)
+./start.sh --ollama      # with a local Ollama server and pulls llama3.2:1b
+```
+
+Press `Ctrl+C` to stop — it shuts down the API (and Ollama, if `--ollama` was used)
+cleanly. The Docker containers are left running since they're shared, persistent
+infrastructure; stop them separately with `docker compose down` when you're done.
+
+Use `--ollama` when you need the chat endpoint (see [AiRef.md](AiRef.md)) — it's
+skipped by default since not every session needs the LLM warmed up. If Ollama is
+already running on `:11434`, the script detects it and leaves it alone rather than
+starting a second instance.
 
 ## Service URLs
 

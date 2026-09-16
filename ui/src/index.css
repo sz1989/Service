@@ -1,18 +1,23 @@
 :root {
   --text: #6b6375;
   --text-h: #08060d;
+  --text-muted: #8b8593;
   --bg: #fff;
+  --bg-page: #f6f5f8;
   --border: #e5e4e7;
   --surface: #f9f8fb;
   --accent: #aa3bff;
+  --accent-hover: #9422f0;
   --danger: #d33;
+  --shadow: 0 1px 2px rgba(16, 12, 24, 0.04), 0 8px 24px rgba(16, 12, 24, 0.06);
+  --radius: 12px;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
   font: 16px/145% var(--sans);
   color-scheme: light dark;
   color: var(--text);
-  background: var(--bg);
+  background: var(--bg-page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -23,10 +28,14 @@
   :root {
     --text: #9ca3af;
     --text-h: #f3f4f6;
+    --text-muted: #767c8a;
     --bg: #16171d;
+    --bg-page: #101116;
     --border: #2e303a;
     --surface: #1f2028;
     --accent: #c084fc;
+    --accent-hover: #d3a5fd;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -54,17 +63,37 @@ h2 {
 
 button {
   font: inherit;
+  font-weight: 500;
   cursor: pointer;
   border: none;
   border-radius: 6px;
   padding: 10px 16px;
   background: var(--accent);
   color: #fff;
+  transition: background-color 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-hover);
 }
 
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.button-secondary {
+  background: transparent;
+  color: var(--text-h);
+  border: 1px solid var(--border);
+}
+
+.button-secondary:hover:not(:disabled) {
+  background: var(--surface);
+}
+
+.pagination button {
+  padding-inline: 10px;
 }
 
 .login-page {
@@ -105,14 +134,78 @@ button:disabled {
 
 .dashboard-page {
   max-width: 960px;
+  min-height: 100svh;
   margin: 0 auto;
-  padding: 32px 16px;
+  padding: 32px 16px 64px;
 }
 
 .dashboard-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-subtitle {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.dashboard-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.dashboard-card h2 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.chat-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.chat-form input {
+  flex: 1;
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.chat-form input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.chat-response {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-h);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  min-height: 3em;
 }
 
 table {
@@ -121,9 +214,22 @@ table {
   margin-top: 16px;
 }
 
-th,
-td {
+th {
   text-align: left;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr:hover {
+  background: var(--surface);
 }

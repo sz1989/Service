@@ -21,10 +21,27 @@
             }
         },
         {
+            "name": "React: Chrome",
+            "type": "pwa-chrome",
+            "request": "launch",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}/ui/src",
+            "sourceMaps": true
+        },
+        {
             "name": ".NET Attach",
             "type": "coreclr",
             "request": "attach",
             "processId": "${command:pickProcess}"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "React + .NET",
+            "configurations": [
+                "React: Chrome",
+                ".NET Launch (web)"
+            ]
         }
     ]
 }

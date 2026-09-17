@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 OLLAMA_MODEL="llama3.2:1b"
+OLLAMA_EMBEDDING_MODEL="nomic-embed-text"
 WITH_OLLAMA=false
 
 for arg in "$@"; do
@@ -45,6 +46,9 @@ if [ "$WITH_OLLAMA" = true ]; then
 
   echo "Ensuring model $OLLAMA_MODEL is pulled..."
   ollama pull "$OLLAMA_MODEL"
+
+  echo "Ensuring embedding model $OLLAMA_EMBEDDING_MODEL is pulled..."
+  ollama pull "$OLLAMA_EMBEDDING_MODEL"
 fi
 
 echo "dotnet run --project src/Service"

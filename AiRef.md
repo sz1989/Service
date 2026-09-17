@@ -41,6 +41,17 @@ curl -k -G https://localhost:7071/Chat \
 curl -k -G https://localhost:7071/Chat \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   --data-urlencode "question=Summarize this in one sentence: the mitochondria is the powerhouse of the cell"
+
+# sending embeddings
+curl -k -X POST https://localhost:7071/Documents/ingest \
+  -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
+  -H "Content-Type: application/json" \
+  -d '[
+        "Minimal APIs simplify endpoint development in ASP.NET Core.",
+        "Entity Framework Core streamlines database operations.",
+        "Background services process long-running tasks efficiently.",
+        "Dependency injection improves application maintainability."
+      ]'
 ```
 
 Empty/whitespace `question` → `400 Bad Request` (`"question is required."`).

@@ -160,6 +160,32 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+.dashboard-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard-tabs button {
+  font: inherit;
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.dashboard-tabs button:hover {
+  color: var(--text-h);
+}
+
+.dashboard-tabs button.active {
+  color: var(--text-h);
+  border-bottom-color: var(--accent);
+}
+
 .dashboard-card {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -193,6 +219,33 @@ button:disabled {
 .chat-form input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+.ingest-panel textarea {
+  display: block;
+  width: 100%;
+  font: inherit;
+  padding: 10px 12px;
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  resize: vertical;
+}
+
+.ingest-panel textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.ingest-panel button {
+  margin-top: 12px;
+}
+
+.ingest-success {
+  margin-top: 12px;
+  color: var(--accent);
 }
 
 .chat-response {

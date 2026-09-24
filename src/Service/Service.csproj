@@ -19,7 +19,9 @@
     <PackageReference Include="AspNetCore.HealthChecks.Redis" />
     <PackageReference Include="Microsoft.Extensions.AI" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+    <PackageReference Include="Npgsql" />
     <PackageReference Include="OllamaSharp" />
+    <PackageReference Include="Pgvector" />
     <PackageReference Include="RedisRateLimiting" />
     <PackageReference Include="Scrutor" />
     <PackageReference Include="StackExchange.Redis" />

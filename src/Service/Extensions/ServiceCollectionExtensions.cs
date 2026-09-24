@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.ML;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using RedisRateLimiting;
 using Service;
 using Service.Authentication;
@@ -29,7 +30,15 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
-        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+
+        // UseVector() teaches Npgsql to map Pgvector.Vector <-> the Postgres "vector" type;
+        // without it, parameters of type Vector (used by document_embeddings) fail to bind.
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+        dataSourceBuilder.UseVector();
+        var dataSource = dataSourceBuilder.Build();
+
+        services.AddSingleton(dataSource);
+        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(dataSource));
 
         return services;
     }

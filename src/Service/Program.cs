@@ -20,6 +20,14 @@ public class Program
             builder.Configuration["Ollama:Model"] ?? "llama3.2:1b"));
         builder.Services.AddSingleton<IChatClient>(sp => sp.GetRequiredService<OllamaApiClient>());
 
+        // Separate client instance: embeddings need a model built for that purpose
+        // (nomic-embed-text), not the chat model above. Registered only under the
+        // embedding-generator interface so it can't shadow the OllamaApiClient singleton
+        // that IChatClient resolves through.
+        builder.Services.AddSingleton<IEmbeddingGenerator<string, Embedding<float>>>(_ => new OllamaApiClient(
+            new Uri(builder.Configuration["Ollama:Endpoint"] ?? "http://localhost:11434"),
+            builder.Configuration["Ollama:EmbeddingModel"] ?? "nomic-embed-text"));
+
         builder.Services.AddScannedServices();
         builder.Services.AddMcp();
         builder.Services.AddPersistence(builder.Configuration);

@@ -31,7 +31,7 @@ services:
       - personnet
 
   db:
-    image: postgres:17
+    image: pgvector/pgvector:pg17
     container_name: postgres
     env_file: .env
     environment:

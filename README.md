@@ -73,7 +73,7 @@ Press `Ctrl+C` to stop — it shuts down the API (and Ollama, if `--ollama` was 
 cleanly. The Docker containers are left running since they're shared, persistent
 infrastructure; stop them separately with `docker compose down` when you're done.
 
-Use `--ollama` when you need the chat endpoint (see [AiRef.md](AiRef.md)) — it's
+Use `--ollama` when you need the chat endpoint (see [doc/AiRef.md](doc/AiRef.md)) — it's
 skipped by default since not every session needs the LLM warmed up. If Ollama is
 already running on `:11434`, the script detects it and leaves it alone rather than
 starting a second instance.
@@ -120,6 +120,6 @@ docker logs service-api
 docker compose up -d redis   # run redis and any services it depends on
 ```
 
-See [Ref.md](Ref.md) for additional reference commands (Docker build/run, publish, pgAdmin setup, Copilot).
+See [doc/Ref.md](doc/Ref.md) for additional reference commands (Docker build/run, publish, pgAdmin setup, Copilot).
 
-See [AiRef.md](AiRef.md) for AI-related commands (Ollama chat endpoint, ML.NET salary prediction, MCP server / Inspector).
+See [doc/AiRef.md](doc/AiRef.md) for AI-related commands (Ollama chat endpoint, ML.NET salary prediction, MCP server / Inspector).

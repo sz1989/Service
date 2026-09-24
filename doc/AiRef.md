@@ -43,7 +43,7 @@ curl -k -G https://localhost:7071/Chat \
   --data-urlencode "question=Summarize this in one sentence: the mitochondria is the powerhouse of the cell"
 
 # sending embeddings
-curl -k -X POST https://localhost:7071/Documents/ingest \
+curl -k -X POST https://localhost:7071/Chat/ingest \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '[

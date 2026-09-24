@@ -32,4 +32,34 @@ public class EmbeddingService(
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
     }
+
+    public async Task<IReadOnlyList<DocumentMatch>> SearchAsync(string query, int topK = 5, CancellationToken cancellationToken = default)
+    {
+        var embeddings = await embeddingGenerator.GenerateAsync([query], cancellationToken: cancellationToken);
+        var queryVector = new Vector(embeddings.First().Vector.ToArray());
+
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+
+        // <=> is pgvector's cosine distance operator; smaller means more similar.
+        command.CommandText = """
+            SELECT id, text, embedding <=> @embedding AS distance
+            FROM document_embeddings
+            ORDER BY distance
+            LIMIT @topK
+            """;
+
+        command.Parameters.AddWithValue("embedding", queryVector);
+        command.Parameters.AddWithValue("topK", topK);
+
+        var matches = new List<DocumentMatch>();
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            matches.Add(new DocumentMatch(reader.GetString(0), reader.GetString(1), reader.GetDouble(2)));
+        }
+
+        return matches;
+    }
 }

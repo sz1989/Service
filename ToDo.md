@@ -9,3 +9,7 @@ add a SKILL.md
 
 
 Redesign CQRS with Milan https://milanjovanovic.tech/blog/cqrs-pattern-the-way-it-should-have-been-from-the-start
+
+UI:
+* Auto Sign user out after the site is inactive for 5 minutes
+* Add SignlaR capability to the chat submit button

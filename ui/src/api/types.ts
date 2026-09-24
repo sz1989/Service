@@ -9,3 +9,9 @@ export interface Person {
   managerId: number | null
   salary: number
 }
+
+export interface DocumentMatch {
+  id: string
+  text: string
+  distance: number
+}

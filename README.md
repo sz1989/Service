@@ -1,4 +1,4 @@
-# Restful Service in .NET
+# Restful Service in .NET With REACT UI
 
 [![Build](https://github.com/sz1989/Service/actions/workflows/dotnet-build.yml/badge.svg)](https://github.com/sz1989/Service/actions/workflows/dotnet-build.yml)
 [![UI Build](https://github.com/sz1989/Service/actions/workflows/react-build.yml/badge.svg)](https://github.com/sz1989/Service/actions/workflows/react-build.yml)
@@ -129,6 +129,8 @@ docker logs service-api
 docker compose up -d redis   # run redis and any services it depends on
 ```
 
-See [doc/Ref.md](doc/Ref.md) for additional reference commands (Docker build/run, publish, pgAdmin setup, Copilot).
+See [doc/ServiceRef.md](doc/ServiceRef.md) for additional reference commands (Docker build/run, publish, pgAdmin setup, Copilot).
 
 See [doc/AiRef.md](doc/AiRef.md) for AI-related commands (Ollama chat endpoint, ML.NET salary prediction, MCP server / Inspector).
+
+See [doc/UIRef.md](doc/UIRef.md) for UI-related commands (dev server, build, lint, Vitest unit tests).

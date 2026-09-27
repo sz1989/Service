@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChatPanel } from '../components/ChatPanel'
+import { ErrorBoundary } from '../components/ErrorBoundary'
 import { PersonList } from '../components/PersonList'
 import { RagSearchPanel } from '../components/RagSearchPanel'
 import { useAuth } from '../auth/AuthContext'
@@ -56,7 +57,16 @@ export function DashboardPage() {
 
           <section className="dashboard-card">
             <h2>Persons</h2>
-            <PersonList />
+            <ErrorBoundary
+              fallback={
+                <p className="error">
+                  Unable to load the person list right now. Please refresh the page to try
+                  again.
+                </p>
+              }
+            >
+              <PersonList />
+            </ErrorBoundary>
           </section>
         </>
       )}

@@ -41,13 +41,14 @@ cp .env.example .env   # then edit values as needed
 `.env` is git-ignored and consumed by `docker-compose.yml`. Keep `CERT_PASSWORD` in
 sync with the password in `src/Service/generate-cert.sh` (default `P@ssw0rd!`).
 
-### 2. Generate the dev HTTPS certificate
+### 2. Generate the dev HTTPS certificates
 
-The script writes to `./certs`, which Compose mounts into the API container, so it
-must be run from `src/Service`:
+Both scripts export the same trusted `dotnet dev-certs` certificate, so browsers won't
+show an untrusted-certificate warning for either the API or the UI dev server.
 
 ```bash
-cd src/Service && ./generate-cert.sh && cd -
+cd src/Service && ./generate-cert.sh && cd -   # backend — writes ./src/Service/certs, mounted into Docker
+cd ui && ./generate-cert.sh && cd -            # UI dev server — writes ./ui/certs, read by vite.config.ts
 ```
 
 ### 3. Run
@@ -72,7 +73,7 @@ in the background, then runs the UI dev server (`npm install` on first run, then
 `npm run dev`) in the foreground.
 
 ```bash
-./start.sh              # docker deps + API + UI (http://localhost:3000)
+./start.sh              # docker deps + API + UI (https://localhost:3000 once the UI cert is generated, otherwise http://localhost:3000)
 ./start.sh --ollama      # with a local Ollama server and pulls llama3.2:1b
 ```
 
@@ -100,6 +101,7 @@ starting a second instance.
 | Seq (logs)       | http://localhost:5341       |                                        |
 | Postgres         | localhost:5432              |                                        |
 | Redis            | localhost:6379              |                                        |
+| UI (Vite dev server) | https://localhost:3000  | `cd ui && npm run dev`, or via `start.sh`; HTTP if the UI cert hasn't been generated |
 
 ## Authentication
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { Person } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { ApiError, useFetch } from '../hooks/useFetch'
+import { RefreshIcon } from './icons/RefreshIcon'
 
 export function PersonList() {
   const pageSize = 4
@@ -18,23 +19,20 @@ export function PersonList() {
     currentPage * pageSize,
   )
 
-  useEffect(() => {
-    let cancelled = false
-
+  const loadPersons = () => {
     execute('/V2/Person/All', {
       headers: { Authorization: `Bearer ${token}` },
     }).catch((err) => {
-      if (cancelled) return
-
       if (err instanceof ApiError && err.status === 401) {
         logout()
         navigate('/login', { replace: true })
       }
     })
+  }
 
-    return () => {
-      cancelled = true
-    }
+  useEffect(() => {
+    loadPersons()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, execute, logout, navigate])
 
   useEffect(() => {
@@ -78,25 +76,31 @@ export function PersonList() {
         )}
       </tbody>
     </table>
-    <nav className="pagination" aria-label="People pages">
-      <button
-        type="button"
-        onClick={() => setPage((current) => Math.max(1, current - 1))}
-        disabled={currentPage === 1}
-      >
-        Previous
+    <div className="list-toolbar">
+      <nav className="pagination" aria-label="People pages">
+        <button
+          type="button"
+          onClick={() => setPage((current) => Math.max(1, current - 1))}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </button>
+        <span aria-live="polite">
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
+      </nav>
+      <button type="button" className="pagination refresh-button" onClick={loadPersons}>
+        Refresh
+        <RefreshIcon />
       </button>
-      <span aria-live="polite">
-        Page {currentPage} of {totalPages}
-      </span>
-      <button
-        type="button"
-        onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-        disabled={currentPage === totalPages}
-      >
-        Next
-      </button>
-    </nav>
+    </div>
     </>
   )
 }

@@ -39,6 +39,10 @@ jobs:
     - name: Install Dependencies
       run: npm ci
 
-    # Step 4: Type-check and build (tsc -b && vite build)
+    # Step 4: Run unit tests
+    - name: Run Tests
+      run: npm test
+
+    # Step 5: Type-check and build (tsc -b && vite build)
     - name: Build Project
       run: npm run build

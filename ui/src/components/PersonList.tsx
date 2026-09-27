@@ -4,17 +4,19 @@ import type { Person } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { ApiError, useFetch } from '../hooks/useFetch'
 import { RefreshIcon } from './icons/RefreshIcon'
+import { PersonActions } from './PersonActions'
 
 export function PersonList() {
   const pageSize = 4
   const { token, logout } = useAuth()
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
+  const [personsState, setPersonsState] = useState<Person[]>([])
   const { data: persons, error, isLoading, execute } = useFetch<Person[]>()
 
-  const totalPages = Math.max(1, Math.ceil((persons?.length ?? 0) / pageSize))
+  const totalPages = Math.max(1, Math.ceil(personsState.length / pageSize))
   const currentPage = Math.min(page, totalPages)
-  const visiblePersons = (persons ?? []).slice(
+  const visiblePersons = personsState.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   )
@@ -37,6 +39,7 @@ export function PersonList() {
 
   useEffect(() => {
     setPage(1)
+    setPersonsState(persons ?? [])
   }, [persons])
 
   if (isLoading) {
@@ -96,6 +99,16 @@ export function PersonList() {
           Next
         </button>
       </nav>
+      <PersonActions
+        persons={personsState}
+        onAdd={(person) => setPersonsState((current) => [...current, person])}
+        onDelete={(id) => setPersonsState((current) => current.filter((person) => person.id !== id))}
+        onUpdate={(updated) =>
+          setPersonsState((current) =>
+            current.map((person) => (person.id === updated.id ? updated : person)),
+          )
+        }
+      />
       <button type="button" className="pagination refresh-button" onClick={loadPersons}>
         Refresh
         <RefreshIcon />

@@ -8,6 +8,5 @@ public class ChatRequestQueue : IChatRequestQueue
 
     public async Task QueueAsync(ChatAskWorkItem item) => await _queue.Writer.WriteAsync(item);
 
-    public async Task<ChatAskWorkItem> DequeueAsync(CancellationToken cancellationToken) =>
-        await _queue.Reader.ReadAsync(cancellationToken);
+    public async Task<ChatAskWorkItem> DequeueAsync(CancellationToken cancellationToken) => await _queue.Reader.ReadAsync(cancellationToken);
 }

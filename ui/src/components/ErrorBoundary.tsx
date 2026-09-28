@@ -6,14 +6,15 @@ interface ErrorBoundaryProps {
 }
 
 interface ErrorBoundaryState {
+  hasError: boolean;
   error: Error | null
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { error: null }
+  state: ErrorBoundaryState = { error: null, hasError: false }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { error }
+    return { error, hasError: true }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {

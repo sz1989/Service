@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react'
-
-const API_BASE_URL = 'https://localhost:7071'
+import { API_BASE_URL } from '../api/config'
 
 export class ApiError extends Error {
   status: number

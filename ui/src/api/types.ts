@@ -15,3 +15,22 @@ export interface DocumentMatch {
   text: string
   distance: number
 }
+
+export interface ChatAskAccepted {
+  requestId: string
+}
+
+export interface ChatAnswerMessage {
+  requestId: string
+  question: string
+  answer: string | null
+}
+
+export interface ChatErrorMessage {
+  requestId: string
+  message: string
+}
+
+export interface ChatCancelledMessage {
+  requestId: string
+}

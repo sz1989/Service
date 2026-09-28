@@ -124,9 +124,37 @@ kill [id]
 kill -g [id]
 ```
 
-## AI commands
+## Crul Test Signlar
+# 1. Queue a question — returns 202 + requestId immediately, no blocking on the LLM
+curl -k -i -X POST https://localhost:7071/Chat/ask-async \
+  -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Why is the sky blue?", "connectionId": "test-connection-1"}'
 
-See [AiRef.md](AiRef.md) for the chat endpoint (Ollama), ML.NET salary prediction, and MCP server / Inspector commands.
+# 2. Capture the requestId and cancel it — 204 if it was still pending/in-flight
+REQUEST_ID=$(curl -s -X POST https://localhost:7071/Chat/ask-async \
+  -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Explain quantum entanglement in detail", "connectionId": "test-connection-2"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['requestId'])")
+
+curl -k -i -X POST "https://localhost:7071/Chat/ask-async/$REQUEST_ID/cancel" \
+  -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)"
+
+# 3. Cancel the same requestId again — 404, it's already been removed from the registry
+curl -k -i -X POST "https://localhost:7071/Chat/ask-async/$REQUEST_ID/cancel" \
+  -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)"
+
+# 4. Cancel a request that never existed — 404
+curl -k -i -X POST "https://localhost:7071/Chat/ask-async/$(uuidgen)/cancel" \
+  -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)"
+
+# 5. Validation: missing question / connectionId -> 400
+curl -k -i -X POST https://localhost:7071/Chat/ask-async \
+  -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "", "connectionId": "test-connection-1"}'
+
 
 ### Copolit Reference:
 🛠️ Core Slash Commands (/)These act as shortcuts so you don't have to write out long prompts. Just type  in the chat input to see them. 

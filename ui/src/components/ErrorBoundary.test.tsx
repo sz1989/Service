@@ -6,6 +6,14 @@ function Bomb(): never {
   throw new Error('boom')
 }
 
+function MaybeBomb({ shouldThrow }: { shouldThrow: boolean }) {
+  if (shouldThrow) {
+    throw new Error('boom')
+  }
+
+  return <p>Recovered</p>
+}
+
 describe('ErrorBoundary', () => {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -13,6 +21,44 @@ describe('ErrorBoundary', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('does not recover after the failing child stops throwing', () => {
+    const { rerender } = render(
+      <ErrorBoundary>
+        <MaybeBomb shouldThrow={true} />
+      </ErrorBoundary>,
+    )
+
+    expect(screen.getByText('Something went wrong. Please refresh the page.')).toBeInTheDocument()
+
+    rerender(
+      <ErrorBoundary>
+        <MaybeBomb shouldThrow={false} />
+      </ErrorBoundary>,
+    )
+
+    expect(screen.getByText('Something went wrong. Please refresh the page.')).toBeInTheDocument()
+    expect(screen.queryByText('Recovered')).not.toBeInTheDocument()
+  })
+
+  it('recovers when remounted via a changed key', () => {
+    const { rerender } = render(
+      <ErrorBoundary key="attempt-1">
+        <MaybeBomb shouldThrow={true} />
+      </ErrorBoundary>,
+    )
+
+    expect(screen.getByText('Something went wrong. Please refresh the page.')).toBeInTheDocument()
+
+    rerender(
+      <ErrorBoundary key="attempt-2">
+        <MaybeBomb shouldThrow={false} />
+      </ErrorBoundary>,
+    )
+
+    expect(screen.getByText('Recovered')).toBeInTheDocument()
+    expect(screen.queryByText('Something went wrong. Please refresh the page.')).not.toBeInTheDocument()
   })
 
   it('renders children when no error is thrown', () => {

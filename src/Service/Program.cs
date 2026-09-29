@@ -1,6 +1,7 @@
 using Microsoft.Extensions.AI;
 using OllamaSharp;
 using Service.Extensions;
+using Service.Hubs;
 
 namespace Service;
 
@@ -34,6 +35,7 @@ public class Program
         builder.Services.AddErrorHandling();
         builder.Services.AddRedis(builder.Configuration);
         builder.Services.AddBackgroundProcessing();
+        builder.Services.AddChatRealtime();
         builder.Services.AddRateLimiting(builder.Configuration);
         builder.Services.AddControllers();
         builder.Services.AddApiVersioningSupport();
@@ -50,6 +52,7 @@ public class Program
             app.UseApiPipeline();
             app.MapHealthEndpoints();
             app.MapMcp("/mcp");
+            app.MapHub<ChatHub>("/hubs/chat");
 
             // example endpoint to demonstrate OpenAPI documentation
             app.MapGet("/widgets/{id}", (int id) => Results.Ok())

@@ -1,6 +1,7 @@
 using Service.BAL.Chat;
 using Service.BAL.Embeddings;
 using Service.BAL.Rag;
+using Service.Services;
 
 namespace Service.Controllers;
 
@@ -10,7 +11,9 @@ public class ChatController(
     ILogger<ChatController> logger,
     IChatService chatService,
     IRagService ragService,
-    IEmbeddingService embeddingService) : ControllerBase
+    IEmbeddingService embeddingService,
+    IChatRequestQueue chatRequestQueue,
+    IChatRequestRegistry chatRequestRegistry) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<string>> Ask([FromQuery] string question)
@@ -25,6 +28,42 @@ public class ChatController(
         var response = await chatService.AskAsync(question);
 
         return Ok(response);
+    }
+
+    [HttpPost("ask-async")]
+    public async Task<IActionResult> AskAsync([FromBody] ChatAskRequest request)
+    {
+        // Fire-and-notify: the caller connects to /hubs/chat first to get a connectionId, then
+        // posts here. We queue the question and return immediately instead of blocking on the
+        // local LLM; ChatBackgroundService pushes "chatAnswer"/"chatError" to that connection
+        // once ChatService.AskAsync finishes.
+        if (string.IsNullOrWhiteSpace(request.Question))
+        {
+            return BadRequest("question is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.ConnectionId))
+        {
+            return BadRequest("connectionId is required.");
+        }
+
+        var requestId = Guid.NewGuid();
+        logger.LogInformation("Queuing async chat request {RequestId}: {Question}", requestId, request.Question);
+
+        chatRequestRegistry.Register(requestId);
+        await chatRequestQueue.QueueAsync(new ChatAskWorkItem(requestId, request.Question, request.ConnectionId));
+
+        return Accepted(new { requestId });
+    }
+
+    [HttpPost("ask-async/{requestId:guid}/cancel")]
+    public IActionResult CancelAsk(Guid requestId)
+    {
+        // Cancels a still-queued or in-progress AskAsync started via POST /Chat/ask-async.
+        // Not found once the request has already finished (answered, errored, or cancelled).
+        logger.LogInformation("Cancelling chat request {RequestId}", requestId);
+
+        return chatRequestRegistry.TryCancel(requestId) ? NoContent() : NotFound();
     }
 
     [HttpGet("rag")]

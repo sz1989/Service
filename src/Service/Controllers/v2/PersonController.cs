@@ -41,4 +41,40 @@ public class PersonController(ILogger<PersonController> logger, IPersonService p
 
         return Accepted();  //202
     }
+
+    [Authorize(Roles = "admin")]
+    [HttpPost]
+    public async Task<IActionResult> Add([FromBody] Person newPerson)
+    {
+        // POST = server-assigned creation
+        var person = await personService.CreateANewAsync(newPerson);
+        return CreatedAtAction(nameof(GetPerson), new { id = person.Id }, person);
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpPut]
+    public async Task<IActionResult> Update([FromBody] Person updatePerson)
+    {
+        // PUT = idempotent update-at-a-known-id
+        var updated = await personService.UpdatePersonAsync(updatePerson);
+        if (updated is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(updated);
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var deleted = await personService.DeletePersonAsync(id);
+        if (!deleted)
+        {
+            return NotFound();
+        }
+
+        return NoContent(); // 204
+    }
 }

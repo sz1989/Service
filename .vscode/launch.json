@@ -24,7 +24,7 @@
             "name": "React: Chrome",
             "type": "pwa-chrome",
             "request": "launch",
-            "url": "http://localhost:3000",
+            "url": "https://localhost:3000",
             "webRoot": "${workspaceFolder}/ui/src",
             "sourceMaps": true
         },

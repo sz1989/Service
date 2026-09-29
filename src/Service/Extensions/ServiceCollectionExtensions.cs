@@ -54,7 +54,7 @@ public static class ServiceCollectionExtensions
         services.Scan(scan => scan
             .FromAssemblyOf<Program>()
             .AddClasses(classes => classes
-                .Where(type => type != typeof(BackgroundTaskQueue)), publicOnly: true)
+                .Where(type => type != typeof(BackgroundTaskQueue) && type != typeof(ChatRequestQueue) && type != typeof(ChatRequestRegistry)), publicOnly: true)
             .AsMatchingInterface()
             .WithScopedLifetime());
 
@@ -89,6 +89,20 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(capacity: 100));
         services.AddHttpClient();
         services.AddHostedService<AppBackgroundService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// A dedicated queue/hosted-service pair for chat, separate from <see cref="AddBackgroundProcessing"/>'s
+    /// queue: chat requests shouldn't wait behind unrelated background work (or its artificial delay).
+    /// </summary>
+    public static IServiceCollection AddChatRealtime(this IServiceCollection services)
+    {
+        services.AddSignalR();
+        services.AddSingleton<IChatRequestQueue, ChatRequestQueue>();
+        services.AddSingleton<IChatRequestRegistry, ChatRequestRegistry>();
+        services.AddHostedService<ChatBackgroundService>();
 
         return services;
     }
@@ -208,6 +222,24 @@ public static class ServiceCollectionExtensions
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromMinutes(1)
+                };
+
+                // SignalR's WebSocket/SSE transports can't set an Authorization header, so the JS
+                // client puts the JWT in the query string instead — only honor that for the hub path.
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            context.HttpContext.Request.Path.StartsWithSegments("/hubs/chat"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
                 };
             });
 

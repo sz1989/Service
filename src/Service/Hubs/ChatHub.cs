@@ -27,3 +27,5 @@ public class ChatHub(ILogger<ChatHub> logger) : Hub
         await base.OnDisconnectedAsync(exception);
     }
 }
+
+// https://learn.microsoft.com/en-us/dotnet/core/extensions/logging/source-generation

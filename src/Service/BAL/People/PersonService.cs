@@ -21,10 +21,10 @@ public class PersonService(
 
     private static string PersonCacheKey(int id) => $"person:{id}";
 
-    public async Task<IEnumerable<Person>> GetPersonByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Person>> GetPersonByIdAsync(int id, CancellationToken ct = default)
     {
         var cacheKey = PersonCacheKey(id);
-        var cached = await cache.GetStringAsync(cacheKey, cancellationToken);
+        var cached = await cache.GetStringAsync(cacheKey, ct);
         if (cached is not null)
         {
             logger.LogInformation("Cache hit for person {Id}", id);
@@ -36,13 +36,13 @@ public class PersonService(
 
         if (people.Count > 0)
         {
-            await cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(people), CacheEntryOptions, cancellationToken);
+            await cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(people), CacheEntryOptions, ct);
         }
 
         return people;
     }
 
-    public Task<IEnumerable<Person>> GetAllPersonsAsync(CancellationToken cancellationToken = default) =>
+    public Task<IEnumerable<Person>> GetAllPersonsAsync(CancellationToken ct = default) =>
         personRepo.GetAllAsync();
 
     public async Task QueuePersonRefreshAsync(int id)
@@ -61,5 +61,46 @@ public class PersonService(
 
             logger.LogInformation("Background refresh completed for person {Id}", id);
         }, scopeFactory);
+    }
+
+    public async Task<Person?> UpdatePersonAsync(Person updatePerson, CancellationToken ct = default)
+    {
+        var existing = await personRepo.GetByIdAsync(updatePerson.Id);
+        if (existing is null)
+        {
+            return null;
+        }
+
+        personRepo.Update(updatePerson);
+        await personRepo.SaveAsync();
+        await cache.RemoveAsync(PersonCacheKey(updatePerson.Id), ct);
+
+        logger.LogInformation("Updated person {Id}", updatePerson.Id);
+        return updatePerson;
+    }
+
+    public async Task<Person> CreateANewAsync(Person newPerson)
+    {
+        // EF Core's default convention is ValueGeneratedOnAdd, 
+        // meaning Postgres already auto-generates this as an identity/serial column.
+        // var newId = await personRepo.GetMaxIdAsync() + 1;
+        // newPerson.Id = newId;
+        await personRepo.AddAsync(newPerson);
+        await personRepo.SaveAsync();
+        return newPerson;
+    }
+
+    public async Task<bool> DeletePersonAsync(int id, CancellationToken ct = default)
+    {
+        var existing = await personRepo.GetByIdAsync(id);
+        if (existing is null)
+        {
+            return false;
+        }
+
+        personRepo.Delete(existing);
+        await personRepo.SaveAsync();
+        await cache.RemoveAsync(PersonCacheKey(id), ct);
+        return true;
     }
 }

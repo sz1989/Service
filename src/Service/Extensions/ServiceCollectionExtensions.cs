@@ -63,9 +63,22 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddErrorHandling(this IServiceCollection services)
     {
-        services.AddExceptionHandler<GlobalExceptionHandler>();
-        services.AddProblemDetails();
+        // services.AddProblemDetails(options =>
+        // {
+        //     // Runs for EVERY ProblemDetails response: exceptions, plus 404/405 etc. from UseStatusCodePages
+        //     options.CustomizeProblemDetails = ctx =>
+        //     {
+        //         ctx.ProblemDetails.Instance = $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}";
+        //         ctx.ProblemDetails.Extensions["traceId"] =
+        //             Activity.Current?.Id ?? ctx.HttpContext.TraceIdentifier;   // lets support correlate with logs
+        //     };
+        // });
 
+        services.AddProblemDetails();
+        // ORDER MATTERS: handlers run in the order they're registered. Put specific ones first, catch-all last.
+        //services.AddExceptionHandler<ValidationExceptionHandler>();
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+        
         return services;
     }
 

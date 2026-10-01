@@ -49,6 +49,18 @@ public class Program
         {
             Log.Information("Starting web host");
 
+            // Configure the HTTP request pipeline
+            if (app.Environment.IsDevelopment())
+            {
+                // Local Dev: Keep full stack traces visible on the screen for debugging
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                // Production/Staging: Intercept exceptions and use the masking handler
+                app.UseExceptionHandler();
+            }
+            
             app.UseApiPipeline();
             app.MapHealthEndpoints();
             app.MapMcp("/mcp");

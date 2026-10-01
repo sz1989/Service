@@ -42,6 +42,7 @@ public class Program
         builder.Services.AddCorsPolicy(builder.Configuration);
         builder.Services.AddJwtAuthentication(builder.Configuration);
         builder.Services.AddMachineLearning(builder.Environment);
+        builder.Services.AddYarpGateway(builder.Configuration);
 
         var app = builder.Build();
 
@@ -49,8 +50,21 @@ public class Program
         {
             Log.Information("Starting web host");
 
+            // Configure the HTTP request pipeline
+            if (app.Environment.IsDevelopment())
+            {
+                // Local Dev: Keep full stack traces visible on the screen for debugging
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                // Production/Staging: Intercept exceptions and use the masking handler
+                app.UseExceptionHandler();
+            }
+            
             app.UseApiPipeline();
             app.MapHealthEndpoints();
+            app.MapReverseProxy();
             app.MapMcp("/mcp");
             app.MapHub<ChatHub>("/hubs/chat");
 

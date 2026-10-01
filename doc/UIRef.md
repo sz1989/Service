@@ -117,3 +117,21 @@ JWT in `localStorage` under `authToken`, and exposes `isAuthenticated` / `logout
 
 - [ServiceRef.md](ServiceRef.md) — Docker / backend reference commands.
 - [AiRef.md](AiRef.md) — AI-related backend commands (Ollama chat, ML.NET, MCP).
+
+## Reference:
+1. Quicktype (fastest, works on any JSON)
+Grab a sample response (browser DevTools Network tab → copy response, or curl), then feed it to quicktype:
+curl "https://api.github.com/search/users?q=test" -o sample.json
+npx quicktype sample.json -o github-user-search.ts --lang ts
+It infers interfaces (including nested objects/arrays) from the actual JSON shape. There's also a web UI at quicktype.io if you don't want to install anything, and a "Paste JSON as Code" VS Code extension that does the same thing inline via right-click paste.
+
+2. If the API publishes an OpenAPI/Swagger spec
+Use openapi-typescript to generate full, accurate types from the spec (better than quicktype since it captures optional fields, enums, etc. that a single sample can't reveal):
+npx openapi-typescript https://api.example.com/openapi.json -o api-types.ts
+
+3. Specific to GitHub's API (your actual case) — you don't need to generate anything. GitHub publishes an official typed package:
+npm install --save-dev @octokit/openapi-types
+import type { components } from "@octokit/openapi-types";
+type GithubUser = components["schemas"]["simple-user"];
+
+

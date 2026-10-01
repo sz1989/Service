@@ -289,6 +289,19 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>
+    /// Routes/clusters are defined in config under "personCluster" and "aiCluster", both currently
+    /// pointing back at this same app. When Person/AI are split into separate services, only the
+    /// cluster destination addresses in appsettings need to change — the routing code stays the same.
+    /// </summary>
+    public static IServiceCollection AddYarpGateway(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddReverseProxy()
+            .LoadFromConfig(configuration.GetSection("ReverseProxy"));
+
+        return services;
+    }
+
     public static IServiceCollection AddMachineLearning(this IServiceCollection services, IWebHostEnvironment environment)
     {
         var mlModelsDir = Path.Combine(environment.ContentRootPath, "MLModels");

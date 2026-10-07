@@ -87,4 +87,10 @@ public class NotedTests
     {
         Assert.Throws<ArgumentException>(() => Noted.TwoSum([1, 2, 3], target: 100));
     }
+
+    [Fact]
+    public void Test()
+    {
+        Noted.RomanToInt("MCMXCIV");
+    }
 }

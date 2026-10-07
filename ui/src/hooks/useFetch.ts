@@ -51,3 +51,45 @@ export function useFetch<T>(): UseFetchResult<T> {
 
   return { data, error, isLoading, execute }
 }
+
+interface UseCreateResult<T> {
+  data: boolean
+  error: string | null
+  isLoading: boolean
+  execute: (path: string, body: T) => Promise<boolean>
+}
+
+export function useCreate<T>(): UseCreateResult<T> {
+  const [data, setData] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const execute = useCallback(async (path: string, body: T) => {
+    setIsLoading(true)
+    setError(null)
+    try{
+      const response = await fetch(`${API_BASE_URL}${path}`, {
+        method: 'POST',
+        headers: {
+         'Content-Type': 'application/json' // 2. Tell the server to expect JSON
+        },
+        body: JSON.stringify(body) // 3. Stringify your data payload  
+      })
+
+      if (!response.ok) {
+        throw new ApiError(response.status, `Request to ${path} failed with status ${response.status}.`)
+      }
+      setData(true);
+      return true;
+    }
+    catch(err) {
+      const message = err instanceof ApiError ? err.message : 'Network error.';
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { data, error, isLoading, execute};
+}

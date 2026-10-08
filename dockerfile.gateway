@@ -1,0 +1,15 @@
+# Use the SDK image for building the application
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet publish ./src/Gateway/Gateway.csproj -c Release -o /app
+
+# Use the ASP.NET runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+COPY --from=build /app .
+
+ENV ASPNETCORE_URLS="https://+:8081"
+EXPOSE 8081
+
+ENTRYPOINT ["dotnet", "Gateway.dll"]

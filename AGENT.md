@@ -23,6 +23,7 @@ cd ui && npm install && cd -
 docker compose up -d --build        # everything in Docker
 docker compose up -d db redis seq   # just infra, then run API locally:
 dotnet run --project src/Service    # -> https://localhost:7071
+dotnet run --project src/Gateway    # -> https://localhost:7081 (proxies to Service)
 cd ui && npm run dev                # -> https://localhost:3000 (UI only)
 ```
 
@@ -69,7 +70,7 @@ ASP.NET Core 10 Web API (person records, JWT auth, Redis, Postgres/EF Core, LLM 
 
 ```
 .
-├── Service.slnx              # solution file (Model, Service, Service.Tests)
+├── Service.slnx              # solution file (Gateway, Model, Service, Service.Tests)
 ├── Directory.Build.props     # shared MSBuild settings
 ├── Directory.Packages.props  # central NuGet package version management
 ├── docker-compose.yml        # API + Postgres + Redis + pgAdmin + Seq
@@ -78,6 +79,7 @@ ASP.NET Core 10 Web API (person records, JWT auth, Redis, Postgres/EF Core, LLM 
 ├── db/                       # init/seed/query SQL (Postgres + pgvector)
 ├── doc/                      # ServiceRef.md, UIRef.md, AiRef.md reference docs
 ├── src/
+│   ├── Gateway/              # Gateway.csproj — YARP reverse proxy / API gateway in front of Service
 │   ├── Model/                # Model.csproj — shared POCOs (Person, Train)
 │   └── Service/               # Service.csproj — the API project
 ├── tests/
@@ -126,6 +128,19 @@ src/Service/
 ```
 
 Layering convention: `Controllers` → `BAL/<Feature>` (interface + impl) → `Data` (repositories/`AppDbContext`). Cross-cutting concerns (auth, error handling, background work, Redis) sit alongside in their own top-level folders rather than inside `BAL`.
+
+## `src/Gateway` (API gateway)
+
+```
+src/Gateway/
+├── Program.cs                 # composition root: CORS, JWT auth, rate limiting, YARP, /health
+├── Extensions/                # ServiceCollectionExtensions, WebApplicationExtensions
+├── appsettings.json           # "ReverseProxy" routes/clusters (destination -> Service)
+├── appsettings.Development.json
+└── Properties/launchSettings.json   # https://localhost:7081
+```
+
+The gateway validates JWTs at the edge (same `Jwt` issuer/audience/key as `Service`; `Jwt:Key` must match) and rejects missing/invalid tokens with 401. `publicRoute` (`/Auth`, `/health`, `/openapi`, `/scalar`) is anonymous; every other path needs a valid JWT or an `X-Api-Key` header (the key itself is only checked by `Service`). Auth headers are forwarded, so `Service` re-validates and owns role checks. Also handles CORS + edge rate limiting. Add routes/clusters in `appsettings.json` (no code change). Container build: `dockerfile.gateway`. The UI's `VITE_API_BASE_URL` points at the gateway.
 
 ## `ui/` (React frontend)
 

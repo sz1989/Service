@@ -75,42 +75,42 @@ curl -k -H is used to send a web request to a server while ignoring insecure SSL
 ```bash
 docker compose config
 
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/weatherforecast -v  
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/weatherforecast -v  
 
 # Person Endpoint
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/2 -v
-curl -k -H "X-Api-Key: dev-only-api-token-do-not-use-in-production" https://localhost:7071/Person/2 -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/Person/2 -v
+curl -k -H "X-Api-Key: dev-only-api-token-do-not-use-in-production" https://localhost:7081/Person/2 -v
 
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh admin)" https://localhost/Person/1 -v  # JWT with role: admin
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh foo)" https://localhost/Person/1 -v # 403 forbidden 
 
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/All -v  # generating errors
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/Person/All -v  # generating errors
 
-curl -X POST https://localhost:7071/Person/1/refresh -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" # test background service
+curl -X POST https://localhost:7081/Person/1/refresh -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" # test background service
 
 # Same Person controller with versioning
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/V1/Person/2 -v
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/V2/Person/1 -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/V1/Person/2 -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/V2/Person/1 -v
 
 # docker
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/weatherforecast -v
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/Person/2 -v  
 
-curl -k -X POST https://localhost:7071/Prediction/predict-salary \
+curl -k -X POST https://localhost:7081/Prediction/predict-salary \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice", "age": 25}'
 
 # Get Token from Auth/login
-TOKEN=$(curl -s https://localhost:7071/Auth/login -k \
+TOKEN=$(curl -s https://localhost:7081/Auth/login -k \
   -X POST -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin"}' \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
 
-curl -i https://localhost:7071/Person/1 -H "Authorization: Bearer $TOKEN"
+curl -i https://localhost:7081/Person/1 -H "Authorization: Bearer $TOKEN"
 
 # Resilience
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Resilience -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/Resilience -v
 
 pgadmin: http://localhost:8080/login?next=/
 
@@ -126,31 +126,31 @@ kill -g [id]
 
 ## Crul Test Signlar
 # 1. Queue a question — returns 202 + requestId immediately, no blocking on the LLM
-curl -k -i -X POST https://localhost:7071/Chat/ask-async \
+curl -k -i -X POST https://localhost:7081/Chat/ask-async \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '{"question": "Why is the sky blue?", "connectionId": "test-connection-1"}'
 
 # 2. Capture the requestId and cancel it — 204 if it was still pending/in-flight
-REQUEST_ID=$(curl -s -X POST https://localhost:7071/Chat/ask-async \
+REQUEST_ID=$(curl -s -X POST https://localhost:7081/Chat/ask-async \
   -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '{"question": "Explain quantum entanglement in detail", "connectionId": "test-connection-2"}' \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['requestId'])")
 
-curl -k -i -X POST "https://localhost:7071/Chat/ask-async/$REQUEST_ID/cancel" \
+curl -k -i -X POST "https://localhost:7081/Chat/ask-async/$REQUEST_ID/cancel" \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)"
 
 # 3. Cancel the same requestId again — 404, it's already been removed from the registry
-curl -k -i -X POST "https://localhost:7071/Chat/ask-async/$REQUEST_ID/cancel" \
+curl -k -i -X POST "https://localhost:7081/Chat/ask-async/$REQUEST_ID/cancel" \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)"
 
 # 4. Cancel a request that never existed — 404
-curl -k -i -X POST "https://localhost:7071/Chat/ask-async/$(uuidgen)/cancel" \
+curl -k -i -X POST "https://localhost:7081/Chat/ask-async/$(uuidgen)/cancel" \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)"
 
 # 5. Validation: missing question / connectionId -> 400
-curl -k -i -X POST https://localhost:7071/Chat/ask-async \
+curl -k -i -X POST https://localhost:7081/Chat/ask-async \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '{"question": "", "connectionId": "test-connection-1"}'

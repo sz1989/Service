@@ -42,7 +42,6 @@ public class Program
         builder.Services.AddCorsPolicy(builder.Configuration);
         builder.Services.AddJwtAuthentication(builder.Configuration);
         builder.Services.AddMachineLearning(builder.Environment);
-        builder.Services.AddYarpGateway(builder.Configuration);
 
         var app = builder.Build();
 
@@ -64,7 +63,6 @@ public class Program
             
             app.UseApiPipeline();
             app.MapHealthEndpoints();
-            app.MapReverseProxy();
             app.MapMcp("/mcp");
             app.MapHub<ChatHub>("/hubs/chat");
 

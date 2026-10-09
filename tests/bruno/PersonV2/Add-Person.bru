@@ -1,0 +1,39 @@
+meta {
+  name: Add Person
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v2/Person
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Bruno Test",
+    "dateOfBirth": "1990-01-15",
+    "managerId": null,
+    "salary": 50000
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  bru.setVar("personId", res.body.id);
+}
+
+tests {
+  test("echoes the created person with a server-assigned id", function () {
+    expect(res.body.id).to.be.a("number");
+    expect(res.body.name).to.equal("Bruno Test");
+  });
+
+  test("Location header points at the new person", function () {
+    expect(res.headers["location"]).to.include(String(res.body.id));
+  });
+}

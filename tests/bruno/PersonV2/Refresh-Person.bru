@@ -1,0 +1,15 @@
+meta {
+  name: Refresh Person
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/v2/Person/{{personId}}/refresh
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 202
+}

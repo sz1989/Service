@@ -1,0 +1,32 @@
+meta {
+  name: Update Person
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/v2/Person
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "id": {{personId}},
+    "name": "Bruno Test Updated",
+    "dateOfBirth": "1990-01-15",
+    "managerId": null,
+    "salary": 60000
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns the updated values", function () {
+    expect(res.body.name).to.equal("Bruno Test Updated");
+    expect(res.body.salary).to.equal(60000);
+  });
+}

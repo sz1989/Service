@@ -1,0 +1,15 @@
+meta {
+  name: Delete Person
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/v2/Person/{{personId}}
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 204
+}

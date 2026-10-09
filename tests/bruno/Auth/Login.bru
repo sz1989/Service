@@ -1,0 +1,33 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/Auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{username}}",
+    "password": "{{password}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.token: isString
+}
+
+script:post-response {
+  bru.setEnvVar("token", res.body.token);
+}
+
+tests {
+  test("returns a JWT", function () {
+    expect(res.body.token.split(".")).to.have.lengthOf(3);
+  });
+}

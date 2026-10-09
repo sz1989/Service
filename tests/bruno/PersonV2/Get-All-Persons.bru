@@ -1,0 +1,23 @@
+meta {
+  name: Get All Persons
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/v2/Person/All
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns an array containing the created person", function () {
+    expect(res.body).to.be.an("array");
+    const ids = res.body.map((p) => p.id);
+    expect(ids).to.include(bru.getVar("personId"));
+  });
+}

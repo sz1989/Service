@@ -18,6 +18,91 @@
 | `GET /health`, `/health/details` | anonymous    | Liveness + Redis health check                |
 | `POST /mcp`                    | anonymous       | MCP server (`GetWeather` tool)               |
 
+## Bruno testing
+
+API tests for `PersonController` V2 live in `tests/bruno/` and go through the **gateway**, not the API directly.
+
+```
+tests/bruno/
+├── bruno.json
+├── environments/local.bru      # baseUrl, username, password
+├── Auth/Login.bru              # POST /Auth/login, stores the JWT in `token`
+└── PersonV2/                   # requests run in seq order, bearer {{token}} set in folder.bru
+```
+
+### 1. Prerequisites
+
+```bash
+# Bruno CLI (optional: `npx @usebruno/cli` works without installing)
+npm install -g @usebruno/cli
+bru --version
+```
+
+Postgres and Redis must be up (e.g. `docker compose up -d db redis`).
+
+### 2. Start the API and the gateway
+
+```bash
+# terminal 1: API  -> https://localhost:7071
+dotnet run --project src/Service --launch-profile https
+
+# terminal 2: gateway -> https://localhost:7081
+dotnet run --project src/Gateway --launch-profile https
+```
+
+`dotnet run` does not hot reload. After changing service code, stop (Ctrl+C) and restart the API before re-running the tests.
+
+### 3. Run the tests
+
+```bash
+cd tests/bruno
+bru run Auth/Login.bru PersonV2 --env local --insecure
+# or without a global install:
+npx @usebruno/cli run Auth/Login.bru PersonV2 --env local --insecure
+```
+
+- `Auth/Login.bru` must run first; it saves the token the `PersonV2` requests use.
+- `--env local` loads `environments/local.bru` (`baseUrl` = `https://localhost:7081`, user `admin`/`admin`, the Development user in `appsettings.Development.json`).
+- `--insecure` accepts the self-signed dev certificate.
+- Expected result: 10 requests, 6/6 tests, 11/11 assertions.
+
+Useful variations:
+
+```bash
+bru run PersonV2/Get-All-Persons.bru --env local --insecure            # one request (token must already be set)
+bru run Auth/Login.bru PersonV2 --env local --insecure --bail          # stop at the first failure
+bru run Auth/Login.bru PersonV2 --env local --insecure --reporter-html report.html
+```
+
+### 4. Running against Docker Compose
+
+Change `baseUrl` in `tests/bruno/environments/local.bru` to `https://localhost:9443` (the gateway port in Compose) and run the same command.
+
+### 5. Using the Bruno desktop app
+
+*Open Collection* → select `tests/bruno` → pick the `local` environment (top right) → run **Login**, then right-click the **PersonV2** folder → *Run*.
+
+### What the PersonV2 requests cover
+
+| Request                  | Expect | Notes                                              |
+|--------------------------|--------|----------------------------------------------------|
+| Unauthenticated Get      | 401    | No token; rejected at the gateway                  |
+| Add Person               | 201    | Saves `personId` for the following requests        |
+| Get Person               | 200    | Response is an array (controller returns the list) |
+| Get All Persons          | 200    | `admin` role                                       |
+| Update Person            | 200    | PUT with `id` in the body                          |
+| Update Missing Person    | 404    | id `999999`                                        |
+| Refresh Person           | 202    | Anonymous in the API, but the gateway needs a token |
+| Delete Person            | 204    |                                                    |
+| Get Deleted Person       | 404    |                                                    |
+
+### Troubleshooting
+
+- Connection errors on every request: the API or gateway isn't running, or `baseUrl` points at the wrong port.
+- Login passes but later requests return 401: Login wasn't part of the same `bru run`, so `token` was never set.
+- Certificate errors: add `--insecure`.
+- Unexpected 500 after a code change: restart the API (no hot reload).
+
 ## Docker Run
 
 ```bash

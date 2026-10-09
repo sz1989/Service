@@ -71,12 +71,19 @@ public class PersonService(
             return null;
         }
 
-        personRepo.Update(updatePerson);
-        await personRepo.SaveAsync();
-        await cache.RemoveAsync(PersonCacheKey(updatePerson.Id), ct);
+        // `existing` is already tracked by the context, so copy values onto it
+        // rather than attaching a second instance with the same key.
+        existing.Name = updatePerson.Name;
+        existing.DateOfBirth = updatePerson.DateOfBirth;
+        existing.ManagerId = updatePerson.ManagerId;
+        existing.Salary = updatePerson.Salary;
 
-        logger.LogInformation("Updated person {Id}", updatePerson.Id);
-        return updatePerson;
+        personRepo.Update(existing);
+        await personRepo.SaveAsync();
+        await cache.RemoveAsync(PersonCacheKey(existing.Id), ct);
+
+        logger.LogInformation("Updated person {Id}", existing.Id);
+        return existing;
     }
 
     public async Task<Person> CreateANewAsync(Person newPerson)

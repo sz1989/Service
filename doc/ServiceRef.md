@@ -23,15 +23,13 @@
 ```bash
 docker build -t service:latest .
 
-docker run -d --name my-service -p 7071:8081 -p 7070:8080 -v "$(pwd)/src/Service/certs:/app/certs" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certs/aspnetcore.pfx -e ASPNETCORE_Kestrel__Certificates__Default__Password='P@ssw0rd!' service:latest
+docker run -d --name my-service -p 7071:8081 -v "$(pwd)/src/Service/certs:/app/certs" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certs/aspnetcore.pfx -e ASPNETCORE_Kestrel__Certificates__Default__Password='P@ssw0rd!' service:latest
 
 docker rm -f container_name
 ```
 -f (force) run docker run at root 
 
 dotnet publish --os linux --configuration Release -t:PublishContainer
-
-docker run -d -p 7070:8080 service
 
 ## Docker CLI:
 ```bash

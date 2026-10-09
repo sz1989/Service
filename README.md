@@ -63,7 +63,7 @@ Or run the API directly against Dockerized dependencies:
 docker compose up -d db redis seq
 
 dotnet run --project src/Service   # https://localhost:7071
-dotnet run --project src/Gateway   # https://localhost:7081 (API gateway -> Service)
+dotnet run --project src/Gateway   # https://localhost:7081 (API gateway (7081) -> Service (7071))
 ```
 
 ### 4. Or start everything with `start.sh`
@@ -92,7 +92,7 @@ starting a second instance.
 | Service          | URL                         | Notes                                  |
 |------------------|-----------------------------|----------------------------------------|
 | API (HTTPS)      | https://localhost           | `443:8081` in Compose; `7071` via `dotnet run` |
-| API (HTTP)       | http://localhost            | `80:8080` in Compose; `7070` via `dotnet run`  |
+| API (HTTP)       | http://localhost            | `80:8080` in Compose; not served via `dotnet run` |
 | Gateway (HTTPS)  | https://localhost:9443      | `9443:8081` in Compose; `7081` via `dotnet run`; YARP proxy in front of the API (the UI talks to this) |
 | Scalar API ref   | https://localhost/scalar/v1, `/scalar/v2` | Development only; one page per API version |
 | OpenAPI JSON – v1 | https://localhost/openapi/v1.json | Development environment only            |

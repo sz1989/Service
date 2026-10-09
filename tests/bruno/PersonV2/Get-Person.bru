@@ -1,0 +1,22 @@
+meta {
+  name: Get Person
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v2/Person/{{personId}}
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("returns the person that was created", function () {
+    expect(res.body).to.be.an("array").that.is.not.empty;
+    expect(res.body[0].id).to.equal(bru.getVar("personId"));
+  });
+}

@@ -1,4 +1,4 @@
-Next release: create a separate Gateway project to host the ReverseProxy
+Done: separate Gateway project (src/Gateway) hosts the ReverseProxy
 
     Token including validation
     YARP (Yet Another Reverse Proxy): In the .NET ecosystem, Microsoft's YARP middleware

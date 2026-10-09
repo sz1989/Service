@@ -11,3 +11,5 @@ certs/
 node_modules/
 .env
 coverage/
+# Bruno CLI reports
+tests/bruno/report.*

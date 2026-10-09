@@ -1,0 +1,15 @@
+meta {
+  name: Get Deleted Person (404)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/v2/Person/{{personId}}
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 404
+}

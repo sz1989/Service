@@ -18,20 +18,103 @@
 | `GET /health`, `/health/details` | anonymous    | Liveness + Redis health check                |
 | `POST /mcp`                    | anonymous       | MCP server (`GetWeather` tool)               |
 
+## Bruno testing
+
+API tests for `PersonController` V2 live in `tests/bruno/` and go through the **gateway**, not the API directly.
+
+```
+tests/bruno/
+├── bruno.json
+├── environments/local.bru      # baseUrl, username, password
+├── Auth/Login.bru              # POST /Auth/login, stores the JWT in `token`
+└── PersonV2/                   # requests run in seq order, bearer {{token}} set in folder.bru
+```
+
+### 1. Prerequisites
+
+```bash
+# Bruno CLI (optional: `npx @usebruno/cli` works without installing)
+npm install -g @usebruno/cli
+bru --version
+```
+
+Postgres and Redis must be up (e.g. `docker compose up -d db redis`).
+
+### 2. Start the API and the gateway
+
+```bash
+# terminal 1: API  -> https://localhost:7071
+dotnet run --project src/Service --launch-profile https
+
+# terminal 2: gateway -> https://localhost:7081
+dotnet run --project src/Gateway --launch-profile https
+```
+
+`dotnet run` does not hot reload. After changing service code, stop (Ctrl+C) and restart the API before re-running the tests.
+
+### 3. Run the tests
+
+```bash
+cd tests/bruno
+bru run Auth/Login.bru PersonV2 --env local --insecure
+# or without a global install:
+npx @usebruno/cli run Auth/Login.bru PersonV2 --env local --insecure
+```
+
+- `Auth/Login.bru` must run first; it saves the token the `PersonV2` requests use.
+- `--env local` loads `environments/local.bru` (`baseUrl` = `https://localhost:7081`, user `admin`/`admin`, the Development user in `appsettings.Development.json`).
+- `--insecure` accepts the self-signed dev certificate.
+- Expected result: 10 requests, 6/6 tests, 11/11 assertions.
+
+Useful variations:
+
+```bash
+bru run PersonV2/Get-All-Persons.bru --env local --insecure            # one request (token must already be set)
+bru run Auth/Login.bru PersonV2 --env local --insecure --bail          # stop at the first failure
+bru run Auth/Login.bru PersonV2 --env local --insecure --reporter-html report.html
+```
+
+### 4. Running against Docker Compose
+
+Change `baseUrl` in `tests/bruno/environments/local.bru` to `https://localhost:9443` (the gateway port in Compose) and run the same command.
+
+### 5. Using the Bruno desktop app
+
+*Open Collection* → select `tests/bruno` → pick the `local` environment (top right) → run **Login**, then right-click the **PersonV2** folder → *Run*.
+
+### What the PersonV2 requests cover
+
+| Request                  | Expect | Notes                                              |
+|--------------------------|--------|----------------------------------------------------|
+| Unauthenticated Get      | 401    | No token; rejected at the gateway                  |
+| Add Person               | 201    | Saves `personId` for the following requests        |
+| Get Person               | 200    | Response is an array (controller returns the list) |
+| Get All Persons          | 200    | `admin` role                                       |
+| Update Person            | 200    | PUT with `id` in the body                          |
+| Update Missing Person    | 404    | id `999999`                                        |
+| Refresh Person           | 202    | Anonymous in the API, but the gateway needs a token |
+| Delete Person            | 204    |                                                    |
+| Get Deleted Person       | 404    |                                                    |
+
+### Troubleshooting
+
+- Connection errors on every request: the API or gateway isn't running, or `baseUrl` points at the wrong port.
+- Login passes but later requests return 401: Login wasn't part of the same `bru run`, so `token` was never set.
+- Certificate errors: add `--insecure`.
+- Unexpected 500 after a code change: restart the API (no hot reload).
+
 ## Docker Run
 
 ```bash
 docker build -t service:latest .
 
-docker run -d --name my-service -p 7071:8081 -p 7070:8080 -v "$(pwd)/src/Service/certs:/app/certs" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certs/aspnetcore.pfx -e ASPNETCORE_Kestrel__Certificates__Default__Password='P@ssw0rd!' service:latest
+docker run -d --name my-service -p 7071:8081 -v "$(pwd)/src/Service/certs:/app/certs" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/app/certs/aspnetcore.pfx -e ASPNETCORE_Kestrel__Certificates__Default__Password='P@ssw0rd!' service:latest
 
 docker rm -f container_name
 ```
 -f (force) run docker run at root 
 
 dotnet publish --os linux --configuration Release -t:PublishContainer
-
-docker run -d -p 7070:8080 service
 
 ## Docker CLI:
 ```bash
@@ -75,42 +158,42 @@ curl -k -H is used to send a web request to a server while ignoring insecure SSL
 ```bash
 docker compose config
 
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/weatherforecast -v  
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/weatherforecast -v  
 
 # Person Endpoint
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/2 -v
-curl -k -H "X-Api-Key: dev-only-api-token-do-not-use-in-production" https://localhost:7071/Person/2 -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/Person/2 -v
+curl -k -H "X-Api-Key: dev-only-api-token-do-not-use-in-production" https://localhost:7081/Person/2 -v
 
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh admin)" https://localhost/Person/1 -v  # JWT with role: admin
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh foo)" https://localhost/Person/1 -v # 403 forbidden 
 
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Person/All -v  # generating errors
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/Person/All -v  # generating errors
 
-curl -X POST https://localhost:7071/Person/1/refresh -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" # test background service
+curl -X POST https://localhost:7081/Person/1/refresh -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" # test background service
 
 # Same Person controller with versioning
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/V1/Person/2 -v
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/V2/Person/1 -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/V1/Person/2 -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/V2/Person/1 -v
 
 # docker
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/weatherforecast -v
 curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost/Person/2 -v  
 
-curl -k -X POST https://localhost:7071/Prediction/predict-salary \
+curl -k -X POST https://localhost:7081/Prediction/predict-salary \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice", "age": 25}'
 
 # Get Token from Auth/login
-TOKEN=$(curl -s https://localhost:7071/Auth/login -k \
+TOKEN=$(curl -s https://localhost:7081/Auth/login -k \
   -X POST -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin"}' \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
 
-curl -i https://localhost:7071/Person/1 -H "Authorization: Bearer $TOKEN"
+curl -i https://localhost:7081/Person/1 -H "Authorization: Bearer $TOKEN"
 
 # Resilience
-curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7071/Resilience -v
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" https://localhost:7081/Resilience -v
 
 pgadmin: http://localhost:8080/login?next=/
 
@@ -126,31 +209,31 @@ kill -g [id]
 
 ## Crul Test Signlar
 # 1. Queue a question — returns 202 + requestId immediately, no blocking on the LLM
-curl -k -i -X POST https://localhost:7071/Chat/ask-async \
+curl -k -i -X POST https://localhost:7081/Chat/ask-async \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '{"question": "Why is the sky blue?", "connectionId": "test-connection-1"}'
 
 # 2. Capture the requestId and cancel it — 204 if it was still pending/in-flight
-REQUEST_ID=$(curl -s -X POST https://localhost:7071/Chat/ask-async \
+REQUEST_ID=$(curl -s -X POST https://localhost:7081/Chat/ask-async \
   -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '{"question": "Explain quantum entanglement in detail", "connectionId": "test-connection-2"}' \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['requestId'])")
 
-curl -k -i -X POST "https://localhost:7071/Chat/ask-async/$REQUEST_ID/cancel" \
+curl -k -i -X POST "https://localhost:7081/Chat/ask-async/$REQUEST_ID/cancel" \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)"
 
 # 3. Cancel the same requestId again — 404, it's already been removed from the registry
-curl -k -i -X POST "https://localhost:7071/Chat/ask-async/$REQUEST_ID/cancel" \
+curl -k -i -X POST "https://localhost:7081/Chat/ask-async/$REQUEST_ID/cancel" \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)"
 
 # 4. Cancel a request that never existed — 404
-curl -k -i -X POST "https://localhost:7071/Chat/ask-async/$(uuidgen)/cancel" \
+curl -k -i -X POST "https://localhost:7081/Chat/ask-async/$(uuidgen)/cancel" \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)"
 
 # 5. Validation: missing question / connectionId -> 400
-curl -k -i -X POST https://localhost:7071/Chat/ask-async \
+curl -k -i -X POST https://localhost:7081/Chat/ask-async \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '{"question": "", "connectionId": "test-connection-1"}'

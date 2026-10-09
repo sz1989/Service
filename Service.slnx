@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="src/Gateway/Gateway.csproj" />
   <Project Path="src/Model/Model.csproj" />
   <Project Path="src/Service/Service.csproj" />
   <Project Path="tests/Service.Tests/Service.Tests.csproj" />

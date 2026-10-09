@@ -61,6 +61,12 @@ cleanup() {
   kill "$BACKEND_PID" 2>/dev/null || true
   wait "$BACKEND_PID" 2>/dev/null || true
 
+  if [ -n "${GATEWAY_PID:-}" ]; then
+    echo "Stopping gateway (pid $GATEWAY_PID)..."
+    kill "$GATEWAY_PID" 2>/dev/null || true
+    wait "$GATEWAY_PID" 2>/dev/null || true
+  fi
+
   if [ -n "$OLLAMA_PID" ]; then
     echo "Stopping Ollama server (pid $OLLAMA_PID)..."
     kill "$OLLAMA_PID" 2>/dev/null || true
@@ -68,6 +74,10 @@ cleanup() {
   fi
 }
 trap cleanup EXIT INT TERM
+
+echo "dotnet run --project src/Gateway"
+dotnet run --project src/Gateway &
+GATEWAY_PID=$!
 
 echo "Preparing UI..."
 cd ui

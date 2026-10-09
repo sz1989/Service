@@ -33,17 +33,17 @@ curl http://localhost:11434/api/tags
 
 ```bash
 # -G keeps it a GET; --data-urlencode escapes spaces / ? / & / #
-curl -k -G https://localhost:7071/Chat \
+curl -k -G https://localhost:7081/Chat \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh admin)" \
   --data-urlencode "question=Why is the sky blue?"
 
 # multiple params
-curl -k -G https://localhost:7071/Chat \
+curl -k -G https://localhost:7081/Chat \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   --data-urlencode "question=Summarize this in one sentence: the mitochondria is the powerhouse of the cell"
 
 # sending embeddings
-curl -k -X POST https://localhost:7071/Chat/ingest \
+curl -k -X POST https://localhost:7081/Chat/ingest \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '[
@@ -79,7 +79,7 @@ Ollama__Model=llama3.1:8b dotnet run --project src/Service
 `POST /Prediction/predict-salary` → `PredictionController` → `PredictionEnginePool<PersonData, PersonPrediction>` (model `PersonSalaryModel`).
 
 ```bash
-curl -k -X POST https://localhost:7071/Prediction/predict-salary \
+curl -k -X POST https://localhost:7081/Prediction/predict-salary \
   -H "Authorization: Bearer $(./src/Service/generate-jwt.sh)" \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice", "age": 25}'
@@ -126,13 +126,13 @@ The Inspector only works over HTTP(S) transport (not stdio here).
 
 ```bash
 # list tools
-curl -k -X POST https://localhost:7071/mcp \
+curl -k -X POST https://localhost:7081/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 
 # call the weather tool
-curl -k -X POST https://localhost:7071/mcp \
+curl -k -X POST https://localhost:7081/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"GetWeatherAsync","arguments":{"cityName":"New York"}}}'

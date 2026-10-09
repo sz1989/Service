@@ -29,8 +29,15 @@ public class PersonServiceTests
     [Fact]
     public async Task UpdatePersonAsync_PersonExists_UpdatesSavesAndReturnsPerson()
     {
-        var existing = new Person { Id = 1, Name = "Old Name" };
-        var updated = new Person { Id = 1, Name = "New Name" };
+        var existing = new Person { Id = 1, Name = "Old Name", Salary = 100m };
+        var updated = new Person
+        {
+            Id = 1,
+            Name = "New Name",
+            DateOfBirth = new DateOnly(1990, 1, 15),
+            ManagerId = 7,
+            Salary = 200m
+        };
 
         _personRepo.Setup(r => r.GetByIdAsync(updated.Id)).ReturnsAsync(existing);
 
@@ -38,8 +45,11 @@ public class PersonServiceTests
 
         var result = await service.UpdatePersonAsync(updated);
 
-        result.Should().BeSameAs(updated);
-        _personRepo.Verify(r => r.Update(updated), Times.Once);
+        // The service updates the tracked entity (avoids an EF duplicate-key tracking conflict)
+        // by copying values onto it, so it returns `existing`, not the incoming object.
+        result.Should().BeSameAs(existing);
+        result.Should().BeEquivalentTo(updated);
+        _personRepo.Verify(r => r.Update(existing), Times.Once);
         _personRepo.Verify(r => r.SaveAsync(), Times.Once);
         _cache.Verify(c => c.RemoveAsync($"person:{updated.Id}", It.IsAny<CancellationToken>()), Times.Once);
     }

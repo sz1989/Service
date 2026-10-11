@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import type { NewPerson, Person } from '../api/types'
 import { AddPersonDialog } from './AddPersonDialog'
+import { PencilIcon } from './icons/PencilIcon'
+import { PlusIcon } from './icons/PlusIcon'
+import { TrashIcon } from './icons/TrashIcon'
 
 interface PersonActionsProps {
   persons: Person[]
@@ -48,18 +51,23 @@ export function PersonActions({ persons, onAdd, onDelete, onUpdate }: PersonActi
 
   return (
     <>
-      <button type="button" onClick={() => setIsAddOpen(true)}>
-        Add
-      </button>
-       {isAddOpen && <AddPersonDialog  
-        onAdd={async (p) => {await onAdd(p); setIsAddOpen(false)}} 
+      <div className="person-actions">
+        <button type="button" onClick={() => setIsAddOpen(true)}>
+          <PlusIcon />
+          Add
+        </button>
+        <button type="button" className="button-secondary" disabled={!hasPersons} onClick={handleUpdate}>
+          <PencilIcon />
+          Update
+        </button>
+        <button type="button" className="button-danger" disabled={!hasPersons} onClick={handleDelete}>
+          <TrashIcon />
+          Delete
+        </button>
+      </div>
+      {isAddOpen && <AddPersonDialog
+        onAdd={async (p) => {await onAdd(p); setIsAddOpen(false)}}
         onCancel={() => setIsAddOpen(false)} />}
-      <button type="button" disabled={!hasPersons} onClick={handleDelete}>
-        Delete
-      </button>
-      <button type="button" disabled={!hasPersons} onClick={handleUpdate}>
-        Update
-      </button>
     </>
   )
 }

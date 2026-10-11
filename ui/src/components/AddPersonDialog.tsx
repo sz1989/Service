@@ -1,7 +1,7 @@
 import { useState, type SubmitEvent } from "react";
 import type { NewPerson } from "../api/types";
 import styles from "./AddPersonDialog.module.css";
-import { DraggableDialog } from "./DraggableDialog";
+import { DraggableDialog } from "./ui/DraggableDialog";
 
 // Today as YYYY-MM-DD in the user's local time zone (toISOString() would give the UTC date).
 function today(): string {

@@ -4,7 +4,7 @@ import type { NewPerson, Person } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { ApiError, useCreate, useFetch } from '../hooks/useFetch'
 import { useDelete } from '../hooks/useDelete'
-import { RefreshIcon } from './icons/RefreshIcon'
+import { RefreshIcon } from './ui/icons/RefreshIcon'
 import { PersonActions } from './PersonActions'
 
 const PERSON_URL = '/V2/Person'
@@ -46,7 +46,7 @@ export function PersonList() {
       })
       loadPersons() // or filiter out setPersonsState((current) => current.filter((person) => person.id !== id))}
       } catch(err) {
-      console.error
+      // console.error
       if (err instanceof ApiError && err.status === 401) {
         logout()
         navigate('/login', { replace: true })

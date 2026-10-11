@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChatPanel } from '../components/ChatPanel'
-import { ErrorBoundary } from '../components/ErrorBoundary'
+import { ErrorBoundary } from '../components/ui/ErrorBoundary'
 import { PersonList } from '../components/PersonList'
 import { RagSearchPanel } from '../components/RagSearchPanel'
 import { useAuth } from '../auth/AuthContext'

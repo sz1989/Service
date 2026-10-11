@@ -2,11 +2,11 @@ import { useState } from 'react'
 import type { NewPerson, Person } from '../api/types'
 import { ApiError } from '../hooks/useFetch'
 import { AddPersonDialog } from './AddPersonDialog'
-import { ConfirmDialog } from './ConfirmDialog'
-import { ErrorDialog } from './ErrorDialog'
-import { PencilIcon } from './icons/PencilIcon'
-import { PlusIcon } from './icons/PlusIcon'
-import { TrashIcon } from './icons/TrashIcon'
+import { ConfirmDialog } from './ui/ConfirmDialog'
+import { ErrorDialog } from './ui/ErrorDialog'
+import { PencilIcon } from './ui/icons/PencilIcon'
+import { PlusIcon } from './ui/icons/PlusIcon'
+import { TrashIcon } from './ui/icons/TrashIcon'
 
 interface PersonActionsProps {
   persons: Person[]

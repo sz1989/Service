@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { Person } from '../api/types'
-import { ApiError } from '../hooks/useFetch'
+import { ApiError } from '../api/ApiError'
 import { PersonActions } from './PersonActions'
 
 const person: Person = {

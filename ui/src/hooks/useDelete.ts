@@ -1,35 +1,23 @@
-import { useCallback, useState } from 'react'
-import { API_BASE_URL } from '../api/config'
-import { ApiError } from './useFetch'
+import { useCallback } from 'react'
+import type { RequestOptions } from '../api/request'
+import { useRequest } from './useRequest'
 
 interface UseDeleteResult {
   error: string | null
   isLoading: boolean
-  execute: (path: string, options?: RequestInit) => Promise<void>
+  execute: (path: string, options?: RequestOptions) => Promise<void>
 }
 
 export function useDelete(): UseDeleteResult {
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const { error, isLoading, execute } = useRequest<void>()
 
-  const execute = useCallback(async (path: string, options?: RequestInit) => {
-    setIsLoading(true)
-    setError(null)
+  const remove = useCallback(
+    async (path: string, options?: RequestOptions) => {
+      // method comes last so a caller cannot turn the delete into another verb
+      await execute(path, { ...options, method: 'DELETE' })
+    },
+    [execute],
+  )
 
-    try {
-      const response = await fetch(`${API_BASE_URL}${path}`, { ...options, method: 'DELETE' })
-
-      if (!response.ok) {
-        throw new ApiError(response.status, `Request to ${path} failed with status ${response.status}.`)
-      }
-    } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Network error.'
-      setError(message)
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  return { error, isLoading, execute }
+  return { error, isLoading, execute: remove }
 }

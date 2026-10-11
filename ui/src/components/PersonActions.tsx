@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { NewPerson, Person } from '../api/types'
-import { ApiError } from '../hooks/useFetch'
+import { ApiError } from '../api/ApiError'
 import { AddPersonDialog } from './AddPersonDialog'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { ErrorDialog } from './ui/ErrorDialog'

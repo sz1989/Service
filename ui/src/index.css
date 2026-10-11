@@ -314,6 +314,14 @@ td {
   border-bottom: 1px solid var(--border);
 }
 
+tbody tr {
+  cursor: pointer;
+}
+
 tbody tr:hover {
   background: var(--surface);
+}
+
+tbody tr.selected {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
 }

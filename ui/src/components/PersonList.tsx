@@ -3,8 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import type { NewPerson, Person } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { ApiError, useCreate, useFetch } from '../hooks/useFetch'
+import { useDelete } from '../hooks/useDelete'
 import { RefreshIcon } from './icons/RefreshIcon'
 import { PersonActions } from './PersonActions'
+
+const PERSON_URL = '/V2/Person'
 
 export function PersonList() {
   const pageSize = 4
@@ -12,8 +15,10 @@ export function PersonList() {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const [personsState, setPersonsState] = useState<Person[]>([])
+  const [selectedId, setSelectedId] = useState<number | null>(null)
   const { data: persons, error, isLoading, execute } = useFetch<Person[]>()
   const { execute: addExecute } = useCreate<NewPerson>()
+  const { execute: deleteExecute } = useDelete()
 
   const totalPages = Math.max(1, Math.ceil(personsState.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -21,9 +26,10 @@ export function PersonList() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   )
+  const selectedPerson = visiblePersons.find((p) => p.id === selectedId) ?? visiblePersons[0]
 
   const loadPersons = () => {
-    execute('/V2/Person/All', {
+    execute(`${PERSON_URL}/All`, {
       headers: { Authorization: `Bearer ${token}` },
     }).catch((err) => {
       if (err instanceof ApiError && err.status === 401) {
@@ -33,9 +39,25 @@ export function PersonList() {
     })
   }
 
+  const deletePerson = async (id: number) => {
+    try {
+      await deleteExecute(`${PERSON_URL}/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      loadPersons() // or filiter out setPersonsState((current) => current.filter((person) => person.id !== id))}
+      } catch(err) {
+      console.error
+      if (err instanceof ApiError && err.status === 401) {
+        logout()
+        navigate('/login', { replace: true })
+      } 
+      throw err
+    }
+  }
+
   const addPerson = async (newPerson: NewPerson) => {
     try{
-    await addExecute('/V2/Person', 
+    await addExecute(PERSON_URL,
       newPerson, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -81,7 +103,9 @@ export function PersonList() {
       </thead>
       <tbody>
         {visiblePersons.map((person) => (
-          <tr key={person.id}>
+          <tr key={person.id} 
+            className={person.id === selectedPerson?.id ? 'selected': undefined} 
+            onClick={() => setSelectedId(person.id)}>
             <td>{person.id}</td>
             <td>{person.name}</td>
             <td>{person.dateOfBirth}</td>
@@ -119,12 +143,13 @@ export function PersonList() {
       <PersonActions
         persons={personsState}
         onAdd={addPerson}
-        onDelete={(id) => setPersonsState((current) => current.filter((person) => person.id !== id))}
+        onDelete={deletePerson}
         onUpdate={(updated) =>
           setPersonsState((current) =>
             current.map((person) => (person.id === updated.id ? updated : person)),
           )
         }
+        selectedPerson = {selectedPerson}
       />
       <button type="button" className="pagination refresh-button" onClick={loadPersons}>
         Refresh

@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { Person } from '../api/types'
+import { ApiError } from '../hooks/useFetch'
 import { PersonActions } from './PersonActions'
 
 const person: Person = {
@@ -14,7 +15,7 @@ const person: Person = {
 
 describe('PersonActions', () => {
   it('disables Delete and Update when there are no persons', () => {
-    render(<PersonActions persons={[]} onAdd={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} />)
+    render(<PersonActions persons={[]} onAdd={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={undefined} />)
 
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
@@ -22,7 +23,7 @@ describe('PersonActions', () => {
   })
 
   it('enables all actions when there are persons', () => {
-    render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} />)
+    render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
 
     expect(screen.getByRole('button', { name: 'Add' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled()
@@ -40,7 +41,7 @@ describe('PersonActions', () => {
 
     it('opens the dialog when Add is clicked', async () => {
       const user = userEvent.setup()
-      render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} />)
+      render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
 
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
@@ -52,7 +53,7 @@ describe('PersonActions', () => {
     it('calls onAdd with the entered values and closes the dialog on Ok', async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn().mockResolvedValue(undefined)
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} />)
+      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await fillForm(user)
@@ -71,7 +72,7 @@ describe('PersonActions', () => {
     it('sends the manager id when one is entered', async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn().mockResolvedValue(undefined)
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} />)
+      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await fillForm(user)
@@ -84,7 +85,7 @@ describe('PersonActions', () => {
     it('does not call onAdd when required fields are empty', async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn().mockResolvedValue(undefined)
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} />)
+      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await user.click(screen.getByRole('button', { name: 'Ok' }))
@@ -96,7 +97,7 @@ describe('PersonActions', () => {
     it('closes without calling onAdd on Cancel', async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn().mockResolvedValue(undefined)
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} />)
+      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await user.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -108,7 +109,7 @@ describe('PersonActions', () => {
     it('stays open, shows the error and re-enables Ok when onAdd fails', async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn().mockRejectedValue(new Error('Request failed with status 403.'))
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} />)
+      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await fillForm(user)
@@ -123,7 +124,7 @@ describe('PersonActions', () => {
       const user = userEvent.setup()
       let finishSave: () => void = () => {}
       const onAdd = vi.fn().mockReturnValue(new Promise<void>((resolve) => { finishSave = resolve }))
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} />)
+      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await fillForm(user)
@@ -136,14 +137,89 @@ describe('PersonActions', () => {
     })
   })
 
-  it('calls onDelete with the only existing person id', async () => {
-    const user = userEvent.setup()
-    const onDelete = vi.fn()
+  describe('Delete', () => {
+    const other: Person = { ...person, id: 2, name: 'Sam Lee' }
 
-    render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} />)
+    // The toolbar also has a Delete button, so look for the confirm button inside the dialog.
+    async function confirmDelete(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }))
+    }
 
-    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    it('asks for confirmation before deleting and names the selected person', async () => {
+      const user = userEvent.setup()
+      const onDelete = vi.fn().mockResolvedValue(undefined)
 
-    expect(onDelete).toHaveBeenCalledWith(person.id)
+      render(<PersonActions persons={[person, other]} onAdd={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} selectedPerson={other} />)
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }))
+
+      expect(screen.getByRole('dialog')).toHaveTextContent('Sam Lee')
+      expect(onDelete).not.toHaveBeenCalled()
+    })
+
+    it('calls onDelete with the selected person id once confirmed', async () => {
+      const user = userEvent.setup()
+      const onDelete = vi.fn().mockResolvedValue(undefined)
+
+      render(<PersonActions persons={[person, other]} onAdd={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} selectedPerson={other} />)
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }))
+      await confirmDelete(user)
+
+      expect(onDelete).toHaveBeenCalledTimes(1)
+      expect(onDelete).toHaveBeenCalledWith(other.id)
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    })
+
+    it('does not call onDelete when the confirmation is cancelled', async () => {
+      const user = userEvent.setup()
+      const onDelete = vi.fn().mockResolvedValue(undefined)
+
+      render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} selectedPerson={person} />)
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }))
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+      expect(onDelete).not.toHaveBeenCalled()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    it('disables Delete when nothing is selected', () => {
+      render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={undefined} />)
+
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled()
+    })
+
+    it.each([
+      [new ApiError(403, 'Request failed with status 403.'), "You don't have permission to delete this person."],
+      [new ApiError(404, 'Request failed with status 404.'), 'This person no longer exists.'],
+      [new ApiError(500, 'Request failed with status 500.'), 'Delete failed. Please try again.'],
+      [new Error('Network error.'), 'Delete failed. Please try again.'],
+    ])('shows an error dialog when onDelete fails with %s', async (error, expectedMessage) => {
+      const user = userEvent.setup()
+      const onDelete = vi.fn().mockRejectedValue(error)
+
+      render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} selectedPerson={person} />)
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }))
+      await confirmDelete(user)
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(expectedMessage)
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+    })
+
+    it('closes the error dialog on Ok', async () => {
+      const user = userEvent.setup()
+      const onDelete = vi.fn().mockRejectedValue(new ApiError(403, 'Request failed with status 403.'))
+
+      render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} selectedPerson={person} />)
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }))
+      await confirmDelete(user)
+      await screen.findByRole('alert')
+      await user.click(screen.getByRole('button', { name: 'Ok' }))
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
   })
 })

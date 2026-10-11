@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import type { NewPerson, Person } from '../api/types'
+import { ApiError } from '../hooks/useFetch'
 import { AddPersonDialog } from './AddPersonDialog'
+import { ConfirmDialog } from './ConfirmDialog'
+import { ErrorDialog } from './ErrorDialog'
 import { PencilIcon } from './icons/PencilIcon'
 import { PlusIcon } from './icons/PlusIcon'
 import { TrashIcon } from './icons/TrashIcon'
@@ -8,8 +11,9 @@ import { TrashIcon } from './icons/TrashIcon'
 interface PersonActionsProps {
   persons: Person[]
   onAdd: (person: NewPerson) => Promise<void>
-  onDelete: (id: number) => void
+  onDelete: (id: number) => Promise<void>
   onUpdate: (person: Person) => void
+  selectedPerson: Person | undefined
 }
 
 const FIRST_NAMES = ['Alex', 'Sam', 'Jordan', 'Taylor', 'Casey', 'Morgan']
@@ -36,12 +40,29 @@ function randomExisting(persons: Person[]): Person {
   return persons[Math.floor(Math.random() * persons.length)]
 }
 
-export function PersonActions({ persons, onAdd, onDelete, onUpdate }: PersonActionsProps) {
+function deleteErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.status === 403) return "You don't have permission to delete this person."
+    if (err.status === 404) return 'This person no longer exists.'
+  }
+  return 'Delete failed. Please try again.'
+}
+
+export function PersonActions({ persons, onAdd, onDelete, onUpdate, selectedPerson }: PersonActionsProps) {
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const [personToDelete, setPersonToDelete] = useState<Person | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const hasPersons = persons.length > 0
 
-  function handleDelete() {
-    onDelete(randomExisting(persons).id)
+  async function confirmDelete() {
+    if (!personToDelete) return
+    const { id } = personToDelete
+    setPersonToDelete(null)
+    try {
+      await onDelete(id)
+    } catch (err) {
+      setDeleteError(deleteErrorMessage(err))
+    }
   }
 
   function handleUpdate() {
@@ -60,7 +81,7 @@ export function PersonActions({ persons, onAdd, onDelete, onUpdate }: PersonActi
           <PencilIcon />
           Update
         </button>
-        <button type="button" className="button-danger" disabled={!hasPersons} onClick={handleDelete}>
+        <button type="button" className="button-danger" disabled={!selectedPerson} onClick={() => setPersonToDelete(selectedPerson ?? null)}>
           <TrashIcon />
           Delete
         </button>
@@ -68,6 +89,13 @@ export function PersonActions({ persons, onAdd, onDelete, onUpdate }: PersonActi
       {isAddOpen && <AddPersonDialog
         onAdd={async (p) => {await onAdd(p); setIsAddOpen(false)}}
         onCancel={() => setIsAddOpen(false)} />}
+      {personToDelete && <ConfirmDialog
+        title='Delete Person'
+        message={`Delete ${personToDelete.name} (id ${personToDelete.id})? This cannot be undone.`}
+        confirmLabel='Delete'
+        onConfirm={confirmDelete}
+        onCancel={() => setPersonToDelete(null)} />}
+      {deleteError && <ErrorDialog message={deleteError} onClose={() => setDeleteError(null)} />}
     </>
   )
 }

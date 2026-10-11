@@ -1,8 +1,10 @@
-import type { Person } from '../api/types'
+import { useState } from 'react'
+import type { NewPerson, Person } from '../api/types'
+import { AddPersonDialog } from './AddPersonDialog'
 
 interface PersonActionsProps {
   persons: Person[]
-  onAdd: (person: Person) => void
+  onAdd: (person: NewPerson) => Promise<void>
   onDelete: (id: number) => void
   onUpdate: (person: Person) => void
 }
@@ -32,6 +34,7 @@ function randomExisting(persons: Person[]): Person {
 }
 
 export function PersonActions({ persons, onAdd, onDelete, onUpdate }: PersonActionsProps) {
+  const [isAddOpen, setIsAddOpen] = useState(false)
   const hasPersons = persons.length > 0
 
   function handleDelete() {
@@ -45,9 +48,12 @@ export function PersonActions({ persons, onAdd, onDelete, onUpdate }: PersonActi
 
   return (
     <>
-      <button type="button" onClick={() => onAdd(randomPerson(persons))}>
+      <button type="button" onClick={() => setIsAddOpen(true)}>
         Add
       </button>
+       {isAddOpen && <AddPersonDialog  
+        onAdd={async (p) => {await onAdd(p); setIsAddOpen(false)}} 
+        onCancel={() => setIsAddOpen(false)} />}
       <button type="button" disabled={!hasPersons} onClick={handleDelete}>
         Delete
       </button>

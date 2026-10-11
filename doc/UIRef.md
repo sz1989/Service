@@ -68,6 +68,12 @@ npm run test:watch  # vitest — watch mode
 CI runs `npm test` before `npm run build` — see
 [`.github/workflows/react-build.yml`](../.github/workflows/react-build.yml).
 
+
+## 6. Clean the port 3000
+```bash
+kill $(lsof -ti :3000)
+lsof -i :3000
+```
 ---
 
 ## Project structure

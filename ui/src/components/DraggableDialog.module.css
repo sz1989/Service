@@ -1,0 +1,33 @@
+/* Centered by CSS for both show() and showModal(); dragging adds a translate on top (set inline). */
+.dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  padding: 0;
+}
+
+.caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px 6px 16px;
+  background: #2b579a;
+  color: white;
+  font-weight: bold;
+  cursor: move;
+  user-select: none;
+  touch-action: none; /* stop touch drags from scrolling the page instead of moving the dialog */
+}
+
+.close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: rgb(255 255 255 / 0.2);
+}

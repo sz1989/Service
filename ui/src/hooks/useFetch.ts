@@ -56,7 +56,7 @@ interface UseCreateResult<T> {
   data: boolean
   error: string | null
   isLoading: boolean
-  execute: (path: string, body: T) => Promise<boolean>
+  execute: (path: string, body: T, options?: RequestInit) => Promise<boolean>
 }
 
 export function useCreate<T>(): UseCreateResult<T> {
@@ -64,14 +64,15 @@ export function useCreate<T>(): UseCreateResult<T> {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const execute = useCallback(async (path: string, body: T) => {
+  const execute = useCallback(async (path: string, body: T, options?: RequestInit) => {
     setIsLoading(true)
     setError(null)
     try{
       const response = await fetch(`${API_BASE_URL}${path}`, {
         method: 'POST',
         headers: {
-         'Content-Type': 'application/json' // 2. Tell the server to expect JSON
+         'Content-Type': 'application/json', // 2. Tell the server to expect JSON
+         ...options?.headers
         },
         body: JSON.stringify(body) // 3. Stringify your data payload  
       })

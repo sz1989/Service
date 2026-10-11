@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { Person } from '../api/types'
+import type { NewPerson, Person } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
-import { ApiError, useFetch } from '../hooks/useFetch'
+import { ApiError, useCreate, useFetch } from '../hooks/useFetch'
 import { RefreshIcon } from './icons/RefreshIcon'
 import { PersonActions } from './PersonActions'
 
@@ -13,6 +13,7 @@ export function PersonList() {
   const [page, setPage] = useState(1)
   const [personsState, setPersonsState] = useState<Person[]>([])
   const { data: persons, error, isLoading, execute } = useFetch<Person[]>()
+  const { execute: addExecute } = useCreate<NewPerson>()
 
   const totalPages = Math.max(1, Math.ceil(personsState.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -30,6 +31,22 @@ export function PersonList() {
         navigate('/login', { replace: true })
       }
     })
+  }
+
+  const addPerson = async (newPerson: NewPerson) => {
+    try{
+    await addExecute('/V2/Person', 
+      newPerson, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    loadPersons()
+    } catch(err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout()
+        navigate('/login', { replace: true })
+      } 
+      throw err
+    }
   }
 
   useEffect(() => {
@@ -101,7 +118,7 @@ export function PersonList() {
       </nav>
       <PersonActions
         persons={personsState}
-        onAdd={(person) => setPersonsState((current) => [...current, person])}
+        onAdd={addPerson}
         onDelete={(id) => setPersonsState((current) => current.filter((person) => person.id !== id))}
         onUpdate={(updated) =>
           setPersonsState((current) =>

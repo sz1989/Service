@@ -14,20 +14,38 @@ const person: Person = {
 }
 
 describe('PersonActions', () => {
-  it('disables Delete and Update when there are no persons', () => {
-    render(<PersonActions persons={[]} onAdd={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={undefined} />)
+  it('disables Edit and Delete when no person is selected', () => {
+    render(<PersonActions onAdd={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} selectedPerson={undefined} isEditing={false} />)
 
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Add' })).toBeEnabled()
   })
 
-  it('enables all actions when there are persons', () => {
-    render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
+  it('enables all actions when a person is selected', () => {
+    render(<PersonActions onAdd={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} selectedPerson={person} isEditing={false} />)
 
     expect(screen.getByRole('button', { name: 'Add' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Update' })).toBeEnabled()
+  })
+
+  it('calls onEdit when Edit is clicked', async () => {
+    const user = userEvent.setup()
+    const onEdit = vi.fn()
+    render(<PersonActions onAdd={vi.fn()} onDelete={vi.fn()} onEdit={onEdit} selectedPerson={person} isEditing={false} />)
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+
+    expect(onEdit).toHaveBeenCalledTimes(1)
+  })
+
+  it('disables Add, Edit and Delete while a row is being edited', () => {
+    render(<PersonActions onAdd={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} selectedPerson={person} isEditing={true} />)
+
+    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled()
   })
 
   describe('Add dialog', () => {
@@ -41,7 +59,7 @@ describe('PersonActions', () => {
 
     it('opens the dialog when Add is clicked', async () => {
       const user = userEvent.setup()
-      render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
+      render(<PersonActions onAdd={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} selectedPerson={person} isEditing={false} />)
 
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
@@ -53,7 +71,7 @@ describe('PersonActions', () => {
     it('calls onAdd with the entered values and closes the dialog on Ok', async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn().mockResolvedValue(undefined)
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
+      render(<PersonActions onAdd={onAdd} onDelete={vi.fn()} onEdit={vi.fn()} selectedPerson={person} isEditing={false} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await fillForm(user)
@@ -72,7 +90,7 @@ describe('PersonActions', () => {
     it('sends the manager id when one is entered', async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn().mockResolvedValue(undefined)
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
+      render(<PersonActions onAdd={onAdd} onDelete={vi.fn()} onEdit={vi.fn()} selectedPerson={person} isEditing={false} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await fillForm(user)
@@ -85,7 +103,7 @@ describe('PersonActions', () => {
     it('does not call onAdd when required fields are empty', async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn().mockResolvedValue(undefined)
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
+      render(<PersonActions onAdd={onAdd} onDelete={vi.fn()} onEdit={vi.fn()} selectedPerson={person} isEditing={false} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await user.click(screen.getByRole('button', { name: 'Ok' }))
@@ -97,7 +115,7 @@ describe('PersonActions', () => {
     it('closes without calling onAdd on Cancel', async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn().mockResolvedValue(undefined)
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
+      render(<PersonActions onAdd={onAdd} onDelete={vi.fn()} onEdit={vi.fn()} selectedPerson={person} isEditing={false} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await user.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -109,7 +127,7 @@ describe('PersonActions', () => {
     it('stays open, shows the error and re-enables Ok when onAdd fails', async () => {
       const user = userEvent.setup()
       const onAdd = vi.fn().mockRejectedValue(new Error('Request failed with status 403.'))
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
+      render(<PersonActions onAdd={onAdd} onDelete={vi.fn()} onEdit={vi.fn()} selectedPerson={person} isEditing={false} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await fillForm(user)
@@ -124,7 +142,7 @@ describe('PersonActions', () => {
       const user = userEvent.setup()
       let finishSave: () => void = () => {}
       const onAdd = vi.fn().mockReturnValue(new Promise<void>((resolve) => { finishSave = resolve }))
-      render(<PersonActions persons={[person]} onAdd={onAdd} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={person} />)
+      render(<PersonActions onAdd={onAdd} onDelete={vi.fn()} onEdit={vi.fn()} selectedPerson={person} isEditing={false} />)
 
       await user.click(screen.getByRole('button', { name: 'Add' }))
       await fillForm(user)
@@ -149,7 +167,7 @@ describe('PersonActions', () => {
       const user = userEvent.setup()
       const onDelete = vi.fn().mockResolvedValue(undefined)
 
-      render(<PersonActions persons={[person, other]} onAdd={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} selectedPerson={other} />)
+      render(<PersonActions onAdd={vi.fn()} onDelete={onDelete} onEdit={vi.fn()} selectedPerson={other} isEditing={false} />)
 
       await user.click(screen.getByRole('button', { name: 'Delete' }))
 
@@ -161,7 +179,7 @@ describe('PersonActions', () => {
       const user = userEvent.setup()
       const onDelete = vi.fn().mockResolvedValue(undefined)
 
-      render(<PersonActions persons={[person, other]} onAdd={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} selectedPerson={other} />)
+      render(<PersonActions onAdd={vi.fn()} onDelete={onDelete} onEdit={vi.fn()} selectedPerson={other} isEditing={false} />)
 
       await user.click(screen.getByRole('button', { name: 'Delete' }))
       await confirmDelete(user)
@@ -175,7 +193,7 @@ describe('PersonActions', () => {
       const user = userEvent.setup()
       const onDelete = vi.fn().mockResolvedValue(undefined)
 
-      render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} selectedPerson={person} />)
+      render(<PersonActions onAdd={vi.fn()} onDelete={onDelete} onEdit={vi.fn()} selectedPerson={person} isEditing={false} />)
 
       await user.click(screen.getByRole('button', { name: 'Delete' }))
       await user.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -185,7 +203,7 @@ describe('PersonActions', () => {
     })
 
     it('disables Delete when nothing is selected', () => {
-      render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={vi.fn()} onUpdate={vi.fn()} selectedPerson={undefined} />)
+      render(<PersonActions onAdd={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} selectedPerson={undefined} isEditing={false} />)
 
       expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled()
     })
@@ -199,7 +217,7 @@ describe('PersonActions', () => {
       const user = userEvent.setup()
       const onDelete = vi.fn().mockRejectedValue(error)
 
-      render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} selectedPerson={person} />)
+      render(<PersonActions onAdd={vi.fn()} onDelete={onDelete} onEdit={vi.fn()} selectedPerson={person} isEditing={false} />)
 
       await user.click(screen.getByRole('button', { name: 'Delete' }))
       await confirmDelete(user)
@@ -212,7 +230,7 @@ describe('PersonActions', () => {
       const user = userEvent.setup()
       const onDelete = vi.fn().mockRejectedValue(new ApiError(403, 'Request failed with status 403.'))
 
-      render(<PersonActions persons={[person]} onAdd={vi.fn()} onDelete={onDelete} onUpdate={vi.fn()} selectedPerson={person} />)
+      render(<PersonActions onAdd={vi.fn()} onDelete={onDelete} onEdit={vi.fn()} selectedPerson={person} isEditing={false} />)
 
       await user.click(screen.getByRole('button', { name: 'Delete' }))
       await confirmDelete(user)

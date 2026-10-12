@@ -43,6 +43,7 @@ export function LoginPage() {
           value={username}
           onChange={(event) => setUsername(event.target.value)}
           required
+          autoFocus //The HTML Native Alternative
         />
 
         <label htmlFor="password">Password</label>

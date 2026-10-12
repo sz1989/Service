@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import type { NewPerson, Person } from '../api/types'
 import { ApiError } from '../api/ApiError'
 import { useAuthedRequest } from '../hooks/useAuthedRequest'
@@ -106,10 +106,12 @@ export function PersonList() {
     }
   }
 
+  // Load when the page opens and whenever the login (token) changes. The effect event always runs
+  // the latest loadPersons without making the effect depend on it.
+  const loadOnTokenChange = useEffectEvent(loadPersons)
   useEffect(() => {
-    loadPersons()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authHeaders, execute, handleUnauthorized])
+    loadOnTokenChange()
+  }, [authHeaders])
 
   useEffect(() => {
     setPage(1)

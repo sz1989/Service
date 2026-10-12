@@ -5,6 +5,7 @@ import { ErrorBoundary } from '../components/ui/ErrorBoundary'
 import { PersonList } from '../components/PersonList'
 import { RagSearchPanel } from '../components/RagSearchPanel'
 import { useAuth } from '../auth/AuthContext'
+import { useIdleLogout } from '../hooks/useIdleLogout'
 
 type DashboardTab = 'overview' | 'rag-search'
 
@@ -12,6 +13,11 @@ export function DashboardPage() {
   const { logout } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview')
+  const IDLE_LOGOUT_MS = 15 * 60_000   // 15 minutes
+  useIdleLogout(IDLE_LOGOUT_MS, () => {
+    logout()
+    navigate('/login', { replace: true, state: { reason: 'idle' } })
+  })
 
   function handleLogout() {
     logout()

@@ -15,7 +15,7 @@ import { Spinner } from './ui/Spinner'
 
 const PERSON_URL = '/V2/Person'
 // A load that finishes sooner than this never shows the busy indicator (it would only flash).
-const SPINNER_DELAY_MS = 0
+const SPINNER_DELAY_MS = 300
 
 function updateErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {

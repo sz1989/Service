@@ -87,7 +87,7 @@ describe('useIdleLogout', () => {
 
   it('does nothing while disabled, and starts the clock when it is enabled', () => {
     const onIdle = vi.fn()
-    const { rerender } = renderHook(({ enabled }) => useIdleLogout(IDLE_MS, onIdle, enabled), {
+    const { rerender } = renderHook(({ enabled }) => useIdleLogout(IDLE_MS, onIdle, { enabled }), {
       initialProps: { enabled: false },
     })
 
@@ -103,7 +103,7 @@ describe('useIdleLogout', () => {
 
   it('stops counting when it is disabled again, and waits a full period after the next enable', () => {
     const onIdle = vi.fn()
-    const { rerender } = renderHook(({ enabled }) => useIdleLogout(IDLE_MS, onIdle, enabled), {
+    const { rerender } = renderHook(({ enabled }) => useIdleLogout(IDLE_MS, onIdle, { enabled }), {
       initialProps: { enabled: true },
     })
 
@@ -198,6 +198,139 @@ describe('useIdleLogout', () => {
       act(() => setVisibility('hidden'))
 
       expect(onIdle).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('warning before the logout', () => {
+    const WARNING_MS = 10_000
+
+    function setup(onIdle = vi.fn()) {
+      const hook = renderHook(() => useIdleLogout(IDLE_MS, onIdle, { warningMs: WARNING_MS }))
+      return { ...hook, onIdle }
+    }
+
+    it('does not warn when no warning period is configured', () => {
+      const { result } = renderHook(() => useIdleLogout(IDLE_MS, vi.fn()))
+
+      advance(IDLE_MS - 1)
+
+      expect(result.current.isWarning).toBe(false)
+    })
+
+    it('starts the warning when the warning period begins and counts the seconds down', () => {
+      const { result } = setup()
+
+      advance(IDLE_MS - WARNING_MS - 1)
+      expect(result.current.isWarning).toBe(false)
+
+      advance(1)
+      expect(result.current.isWarning).toBe(true)
+      expect(result.current.secondsLeft).toBe(10)
+
+      advance(1000)
+      expect(result.current.secondsLeft).toBe(9)
+      advance(4000)
+      expect(result.current.secondsLeft).toBe(5)
+    })
+
+    it('calls onIdle at the end of the warning period and clears the warning', () => {
+      const { result, onIdle } = setup()
+
+      advance(IDLE_MS - 1)
+      expect(onIdle).not.toHaveBeenCalled()
+      expect(result.current.secondsLeft).toBe(1)
+
+      advance(1)
+      expect(onIdle).toHaveBeenCalledTimes(1)
+      expect(result.current.isWarning).toBe(false)
+    })
+
+    it('does not warn when the user was active before the warning period', () => {
+      const { result } = setup()
+
+      advance(IDLE_MS - WARNING_MS - 1000)
+      touch()
+      advance(WARNING_MS) // it would be warning by now without the activity
+
+      expect(result.current.isWarning).toBe(false)
+    })
+
+    it('ignores ordinary activity once the warning has started', () => {
+      const { result, onIdle } = setup()
+      advance(IDLE_MS - WARNING_MS)
+      expect(result.current.isWarning).toBe(true)
+
+      touch('mousemove') // e.g. the mouse moving towards the dialog
+      advance(WARNING_MS)
+
+      expect(onIdle).toHaveBeenCalledTimes(1)
+    })
+
+    it('keepAlive ends the warning and starts the whole period over', () => {
+      const { result, onIdle } = setup()
+      advance(IDLE_MS - WARNING_MS)
+      expect(result.current.isWarning).toBe(true)
+
+      act(() => result.current.keepAlive())
+      expect(result.current.isWarning).toBe(false)
+
+      advance(IDLE_MS - WARNING_MS - 1)
+      expect(result.current.isWarning).toBe(false)
+      advance(1)
+      expect(result.current.isWarning).toBe(true) // warned again after another full quiet period
+      advance(WARNING_MS)
+      expect(onIdle).toHaveBeenCalledTimes(1)
+    })
+
+    it('warns right away when the tab becomes visible during the warning period', () => {
+      const { result } = setup()
+
+      vi.setSystemTime(Date.now() + IDLE_MS - 5000) // sleep: the timer has not run
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+
+      expect(result.current.isWarning).toBe(true)
+      expect(result.current.secondsLeft).toBe(5)
+    })
+
+    it('logs out instead of warning when the tab becomes visible after the whole period', () => {
+      const { result, onIdle } = setup()
+
+      vi.setSystemTime(Date.now() + IDLE_MS + 1)
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+
+      expect(onIdle).toHaveBeenCalledTimes(1)
+      expect(result.current.isWarning).toBe(false)
+    })
+
+    it('drops the warning when it is disabled', () => {
+      const onIdle = vi.fn()
+      const { result, rerender } = renderHook(
+        ({ enabled }) => useIdleLogout(IDLE_MS, onIdle, { enabled, warningMs: WARNING_MS }),
+        { initialProps: { enabled: true } },
+      )
+      advance(IDLE_MS - WARNING_MS)
+      expect(result.current.isWarning).toBe(true)
+
+      rerender({ enabled: false })
+
+      expect(result.current.isWarning).toBe(false)
+      advance(IDLE_MS)
+      expect(onIdle).not.toHaveBeenCalled()
+    })
+
+    it('warns at once when the warning period is as long as the idle period', () => {
+      const { result } = renderHook(() => useIdleLogout(5000, vi.fn(), { warningMs: 5000 }))
+
+      advance(0)
+
+      expect(result.current.isWarning).toBe(true)
+      expect(result.current.secondsLeft).toBe(5)
     })
   })
 })

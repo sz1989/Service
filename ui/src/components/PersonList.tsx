@@ -4,14 +4,18 @@ import { ApiError } from '../api/ApiError'
 import { useAuthedRequest } from '../hooks/useAuthedRequest'
 import { useCreate } from '../hooks/useCreate'
 import { useFetch } from '../hooks/useFetch'
+import { useDelayedFlag } from '../hooks/useDelayedFlag'
 import { useDelete } from '../hooks/useDelete'
 import { useUpdate } from '../hooks/useUpdate'
 import { RefreshIcon } from './ui/icons/RefreshIcon'
 import { PersonActions } from './PersonActions'
 import { PersonEditRow } from './PersonEditRow'
 import { ErrorDialog } from './ui/ErrorDialog'
+import { Spinner } from './ui/Spinner'
 
 const PERSON_URL = '/V2/Person'
+// A load that finishes sooner than this never shows the busy indicator (it would only flash).
+const SPINNER_DELAY_MS = 0
 
 function updateErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
@@ -34,6 +38,7 @@ export function PersonList() {
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const isEditing = editingId !== null
+  const showSpinner = useDelayedFlag(isLoading, SPINNER_DELAY_MS)
 
   const totalPages = Math.max(1, Math.ceil(personsState.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -111,17 +116,13 @@ export function PersonList() {
     setPersonsState(persons ?? [])
   }, [persons])
 
-  if (isLoading) {
-    return <p>Loading…</p>
-  }
-
   if (error) {
     return <p className="error">{error}</p>
   }
 
   return (
     <>
-    <table>
+    <table aria-busy={isLoading} className={showSpinner ? 'is-loading' : undefined}>
       <thead>
         <tr>
           <th>Id</th>
@@ -157,7 +158,13 @@ export function PersonList() {
         )}
         {visiblePersons.length === 0 && (
           <tr>
-            <td colSpan={6}>No persons found.</td>
+            <td colSpan={6}>
+              {persons === null ? (
+                showSpinner && <Spinner label="Loading people…" />
+              ) : (
+                'No persons found.'
+              )}
+            </td>
           </tr>
         )}
       </tbody>
@@ -174,6 +181,7 @@ export function PersonList() {
         <span aria-live="polite">
           Page {currentPage} of {totalPages}
         </span>
+        {showSpinner && visiblePersons.length > 0 && <Spinner label="Loading people…" />}
         <button
           type="button"
           onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
@@ -192,9 +200,9 @@ export function PersonList() {
         selectedPerson={selectedPerson}
         isEditing={isEditing}
       />
-      <button type="button" className="pagination refresh-button" disabled={isEditing} onClick={loadPersons}>
+      <button type="button" className="pagination refresh-button" disabled={isEditing || isLoading} onClick={loadPersons}>
         Refresh
-        <RefreshIcon />
+        <RefreshIcon className={isLoading ? 'spin' : undefined} />
       </button>
     </div>
     {updateError && <ErrorDialog message={updateError} onClose={() => setUpdateError(null)} />}

@@ -1,5 +1,5 @@
 import { useState, type SubmitEvent } from 'react'
-import { useAuth } from '../auth/AuthContext'
+import { useAuthedRequest } from '../hooks/useAuthedRequest'
 import { useFetch } from '../hooks/useFetch'
 
 const DEFAULT_TEXT = [
@@ -10,7 +10,7 @@ const DEFAULT_TEXT = [
 ].join('\n')
 
 export function IngestPanel() {
-  const { token } = useAuth()
+  const { authHeaders, handleUnauthorized } = useAuthedRequest()
   const [text, setText] = useState(DEFAULT_TEXT)
   const { error, isLoading, execute } = useFetch<void>()
   const [ingestedCount, setIngestedCount] = useState<number | null>(null)
@@ -27,19 +27,14 @@ export function IngestPanel() {
 
     await execute('/Chat/ingest', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify(texts),
     })
       .then(() => {
         setIngestedCount(texts.length)
         setText('')
       })
-      .catch(() => {
-        // error state is already surfaced via useFetch
-      })
+      .catch(handleUnauthorized) // other errors are already surfaced through useFetch's error state
   }
 
   return (

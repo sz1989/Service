@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import type { NewPerson, Person } from '../api/types'
-import { useAuth } from '../auth/AuthContext'
 import { ApiError } from '../api/ApiError'
+import { useAuthedRequest } from '../hooks/useAuthedRequest'
 import { useCreate } from '../hooks/useCreate'
 import { useFetch } from '../hooks/useFetch'
 import { useDelete } from '../hooks/useDelete'
@@ -24,8 +23,7 @@ function updateErrorMessage(err: unknown): string {
 
 export function PersonList() {
   const pageSize = 4
-  const { token, logout } = useAuth()
-  const navigate = useNavigate()
+  const { authHeaders, handleUnauthorized } = useAuthedRequest()
   const [page, setPage] = useState(1)
   const [personsState, setPersonsState] = useState<Person[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -45,27 +43,16 @@ export function PersonList() {
   )
   const selectedPerson = visiblePersons.find((p) => p.id === selectedId) ?? visiblePersons[0]
 
-  // A 401 means the session is gone: log out and go to the login page.
-  // Returns true when it handled the error, so callers know not to report it again.
-  const handleUnauthorized = (err: unknown): boolean => {
-    if (err instanceof ApiError && err.status === 401) {
-      logout()
-      navigate('/login', { replace: true })
-      return true
-    }
-    return false
-  }
-
   const loadPersons = () => {
     execute(`${PERSON_URL}/All`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders,
     }).catch(handleUnauthorized)
   }
 
   const updatePerson = async (person: Person) => {
     try {
       const saved = await updateExecute(PERSON_URL, person, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders,
       })
       // Patch just this row: reloading the list would send the user back to page 1.
       setPersonsState((current) => current.map((p) => (p.id === saved.id ? saved : p)))
@@ -92,7 +79,7 @@ export function PersonList() {
   const deletePerson = async (id: number) => {
     try {
       await deleteExecute(`${PERSON_URL}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: authHeaders,
       })
       loadPersons() // or filiter out setPersonsState((current) => current.filter((person) => person.id !== id))}
     } catch (err) {
@@ -105,7 +92,7 @@ export function PersonList() {
     try{
     await addExecute(PERSON_URL,
       newPerson, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders,
     })
     loadPersons()
     } catch (err) {
@@ -117,7 +104,7 @@ export function PersonList() {
   useEffect(() => {
     loadPersons()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, execute, logout, navigate])
+  }, [authHeaders, execute, handleUnauthorized])
 
   useEffect(() => {
     setPage(1)
@@ -194,6 +181,9 @@ export function PersonList() {
         >
           Next
         </button>
+          <span aria-live="polite">
+            TOTAL: {personsState.length}
+          </span>
       </nav>
       <PersonActions
         onAdd={addPerson}

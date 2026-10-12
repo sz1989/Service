@@ -92,6 +92,19 @@ button:disabled {
   background: var(--surface);
 }
 
+.button-danger {
+  background: var(--danger);
+}
+
+.button-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 85%, black);
+}
+
+.person-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .pagination button {
   padding-top: 5px;
   padding-bottom: 5px;
@@ -99,7 +112,8 @@ button:disabled {
   padding-right: 5px;
 }
 
-.refresh-button {
+.refresh-button,
+.person-actions button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -300,6 +314,14 @@ td {
   border-bottom: 1px solid var(--border);
 }
 
+tbody tr {
+  cursor: pointer;
+}
+
 tbody tr:hover {
   background: var(--surface);
+}
+
+tbody tr.selected {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
 }

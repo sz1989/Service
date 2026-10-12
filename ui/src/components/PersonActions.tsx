@@ -1,59 +1,73 @@
-import type { Person } from '../api/types'
+import { useState } from 'react'
+import type { NewPerson, Person } from '../api/types'
+import { ApiError } from '../api/ApiError'
+import { AddPersonDialog } from './AddPersonDialog'
+import { ConfirmDialog } from './ui/ConfirmDialog'
+import { ErrorDialog } from './ui/ErrorDialog'
+import { PencilIcon } from './ui/icons/PencilIcon'
+import { PlusIcon } from './ui/icons/PlusIcon'
+import { TrashIcon } from './ui/icons/TrashIcon'
 
 interface PersonActionsProps {
-  persons: Person[]
-  onAdd: (person: Person) => void
-  onDelete: (id: number) => void
-  onUpdate: (person: Person) => void
+  onAdd: (person: NewPerson) => Promise<void>
+  onDelete: (id: number) => Promise<void>
+  /** Start editing the selected person's row. */
+  onEdit: () => void
+  selectedPerson: Person | undefined
+  /** A row is being edited: every action is disabled until it is saved or cancelled. */
+  isEditing: boolean
 }
 
-const FIRST_NAMES = ['Alex', 'Sam', 'Jordan', 'Taylor', 'Casey', 'Morgan']
-const LAST_NAMES = ['Smith', 'Johnson', 'Lee', 'Brown', 'Garcia', 'Nguyen']
-
-function randomPerson(persons: Person[]): Person {
-  const nextId = persons.reduce((maxId, person) => Math.max(maxId, person.id), 0) + 1
-  const firstName = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]
-  const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)]
-  const year = 1970 + Math.floor(Math.random() * 40)
-  const month = String(1 + Math.floor(Math.random() * 12)).padStart(2, '0')
-  const day = String(1 + Math.floor(Math.random() * 28)).padStart(2, '0')
-
-  return {
-    id: nextId,
-    name: `${firstName} ${lastName}`,
-    dateOfBirth: `${year}-${month}-${day}`,
-    managerId: null,
-    salary: 40000 + Math.floor(Math.random() * 60000),
+function deleteErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.status === 403) return "You don't have permission to delete this person."
+    if (err.status === 404) return 'This person no longer exists.'
   }
+  return 'Delete failed. Please try again.'
 }
 
-function randomExisting(persons: Person[]): Person {
-  return persons[Math.floor(Math.random() * persons.length)]
-}
+export function PersonActions({ onAdd, onDelete, onEdit, selectedPerson, isEditing }: PersonActionsProps) {
+  const [isAddOpen, setIsAddOpen] = useState(false)
+  const [personToDelete, setPersonToDelete] = useState<Person | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
-export function PersonActions({ persons, onAdd, onDelete, onUpdate }: PersonActionsProps) {
-  const hasPersons = persons.length > 0
-
-  function handleDelete() {
-    onDelete(randomExisting(persons).id)
-  }
-
-  function handleUpdate() {
-    const target = randomExisting(persons)
-    onUpdate({ ...randomPerson(persons), id: target.id })
+  async function confirmDelete() {
+    if (!personToDelete) return
+    const { id } = personToDelete
+    setPersonToDelete(null)
+    try {
+      await onDelete(id)
+    } catch (err) {
+      setDeleteError(deleteErrorMessage(err))
+    }
   }
 
   return (
     <>
-      <button type="button" onClick={() => onAdd(randomPerson(persons))}>
-        Add
-      </button>
-      <button type="button" disabled={!hasPersons} onClick={handleDelete}>
-        Delete
-      </button>
-      <button type="button" disabled={!hasPersons} onClick={handleUpdate}>
-        Update
-      </button>
+      <div className="person-actions">
+        <button type="button" disabled={isEditing} onClick={() => setIsAddOpen(true)}>
+          <PlusIcon />
+          Add
+        </button>
+        <button type="button" className="button-secondary" disabled={!selectedPerson || isEditing} onClick={onEdit}>
+          <PencilIcon />
+          Edit
+        </button>
+        <button type="button" className="button-danger" disabled={!selectedPerson || isEditing} onClick={() => setPersonToDelete(selectedPerson ?? null)}>
+          <TrashIcon />
+          Delete
+        </button>
+      </div>
+      {isAddOpen && <AddPersonDialog
+        onAdd={async (p) => {await onAdd(p); setIsAddOpen(false)}}
+        onCancel={() => setIsAddOpen(false)} />}
+      {personToDelete && <ConfirmDialog
+        title='Delete Person'
+        message={`Delete ${personToDelete.name} (id ${personToDelete.id})? This cannot be undone.`}
+        confirmLabel='Delete'
+        onConfirm={confirmDelete}
+        onCancel={() => setPersonToDelete(null)} />}
+      {deleteError && <ErrorDialog message={deleteError} onClose={() => setDeleteError(null)} />}
     </>
   )
 }

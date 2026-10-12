@@ -47,6 +47,7 @@ public class PersonController(ILogger<PersonController> logger, IPersonService p
     public async Task<IActionResult> Add([FromBody] Person newPerson)
     {
         // POST = server-assigned creation
+        logger.LogInformation("Add {Person}", newPerson);
         var person = await personService.CreateANewAsync(newPerson);
         return CreatedAtAction(nameof(GetPerson), new { id = person.Id }, person);
     }

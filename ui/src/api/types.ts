@@ -10,6 +10,9 @@ export interface Person {
   salary: number
 }
 
+// A person that has not been created yet: the server assigns the id.
+export type NewPerson = Omit<Person, 'id'>
+
 export interface DocumentMatch {
   id: string
   text: string

@@ -1,95 +1,14 @@
-import { useCallback, useState } from 'react'
-import { API_BASE_URL } from '../api/config'
-
-export class ApiError extends Error {
-  status: number
-
-  constructor(status: number, message: string) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-  }
-}
+import type { RequestOptions } from '../api/request'
+import { useRequest } from './useRequest'
 
 interface UseFetchResult<T> {
   data: T | null
   error: string | null
   isLoading: boolean
-  execute: (path: string, options?: RequestInit) => Promise<T>
+  execute: (path: string, options?: RequestOptions) => Promise<T>
 }
 
+// Any request whose response is read: GET lists, login, search, ingest...
 export function useFetch<T>(): UseFetchResult<T> {
-  const [data, setData] = useState<T | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-
-  const execute = useCallback(async (path: string, options?: RequestInit) => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch(`${API_BASE_URL}${path}`, options)
-
-      if (!response.ok) {
-        throw new ApiError(response.status, `Request to ${path} failed with status ${response.status}.`)
-      }
-
-      const contentType = response.headers.get('content-type') ?? ''
-      const result = (contentType.includes('application/json')
-        ? await response.json()
-        : await response.text()) as T
-      setData(result)
-      return result
-    } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Network error.'
-      setError(message)
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  return { data, error, isLoading, execute }
-}
-
-interface UseCreateResult<T> {
-  data: boolean
-  error: string | null
-  isLoading: boolean
-  execute: (path: string, body: T) => Promise<boolean>
-}
-
-export function useCreate<T>(): UseCreateResult<T> {
-  const [data, setData] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const execute = useCallback(async (path: string, body: T) => {
-    setIsLoading(true)
-    setError(null)
-    try{
-      const response = await fetch(`${API_BASE_URL}${path}`, {
-        method: 'POST',
-        headers: {
-         'Content-Type': 'application/json' // 2. Tell the server to expect JSON
-        },
-        body: JSON.stringify(body) // 3. Stringify your data payload  
-      })
-
-      if (!response.ok) {
-        throw new ApiError(response.status, `Request to ${path} failed with status ${response.status}.`)
-      }
-      setData(true);
-      return true;
-    }
-    catch(err) {
-      const message = err instanceof ApiError ? err.message : 'Network error.';
-      setError(message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  return { data, error, isLoading, execute};
+  return useRequest<T>()
 }

@@ -1,11 +1,11 @@
 import { useState, type SubmitEvent } from 'react'
 import type { DocumentMatch } from '../api/types'
-import { useAuth } from '../auth/AuthContext'
+import { useAuthedRequest } from '../hooks/useAuthedRequest'
 import { useFetch } from '../hooks/useFetch'
 import { IngestPanel } from './IngestPanel'
 
 export function RagSearchPanel() {
-  const { token } = useAuth()
+  const { authHeaders, handleUnauthorized } = useAuthedRequest()
   const [query, setQuery] = useState('')
   const [showSeedPanel, setShowSeedPanel] = useState(false)
   const { data: matches, error, isLoading, execute } = useFetch<DocumentMatch[]>()
@@ -15,10 +15,8 @@ export function RagSearchPanel() {
     if (!query.trim()) return
 
     await execute(`/Chat/search?query=${encodeURIComponent(query)}&topK=5`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).catch(() => {
-      // error state is already surfaced via useFetch
-    })
+      headers: authHeaders,
+    }).catch(handleUnauthorized) // other errors are already surfaced through useFetch's error state
   }
 
   return (

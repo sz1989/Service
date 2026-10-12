@@ -1,0 +1,25 @@
+/* Two columns: right-aligned labels, inputs filling the rest. Labels and inputs are direct grid children. */
+.form {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px 16px;
+  align-items: center;
+  padding: 16px;
+}
+
+.form label {
+  text-align: right;
+}
+
+.buttons {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #b00020;
+}

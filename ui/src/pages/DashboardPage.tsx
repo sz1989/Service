@@ -4,7 +4,10 @@ import { ChatPanel } from '../components/ChatPanel'
 import { ErrorBoundary } from '../components/ui/ErrorBoundary'
 import { PersonList } from '../components/PersonList'
 import { RagSearchPanel } from '../components/RagSearchPanel'
+import { SessionTimeoutDialog } from '../components/SessionTimeoutDialog'
 import { useAuth } from '../auth/AuthContext'
+import { IDLE_LOGOUT_MS, IDLE_WARNING_MS } from '../auth/idleConfig'
+import { useIdleLogout } from '../hooks/useIdleLogout'
 
 type DashboardTab = 'overview' | 'rag-search'
 
@@ -12,6 +15,14 @@ export function DashboardPage() {
   const { logout } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview')
+  const { isWarning, secondsLeft, keepAlive } = useIdleLogout(
+    IDLE_LOGOUT_MS,
+    () => {
+      logout()
+      navigate('/login', { replace: true, state: { reason: 'idle' } }) // the login page explains why
+    },
+    { warningMs: IDLE_WARNING_MS },
+  )
 
   function handleLogout() {
     logout()
@@ -72,6 +83,10 @@ export function DashboardPage() {
       )}
 
       {activeTab === 'rag-search' && <RagSearchPanel />}
+
+      {isWarning && (
+        <SessionTimeoutDialog secondsLeft={secondsLeft} onStay={keepAlive} onSignOut={handleLogout} />
+      )}
     </div>
   )
 }

@@ -1,0 +1,24 @@
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Users who turned animations off get a still icon: the label still says what is happening. */
+@media (prefers-reduced-motion: no-preference) {
+  .icon {
+    animation: rotate 0.9s linear infinite;
+  }
+}
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}

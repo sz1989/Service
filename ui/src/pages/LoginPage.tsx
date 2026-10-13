@@ -1,10 +1,12 @@
 import { useState, type SubmitEvent } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 
 export function LoginPage() {
   const { isAuthenticated, login } = useAuth()
   const navigate = useNavigate()
+  // The dashboard sends the user here with this reason after an inactivity logout.
+  const signedOutForInactivity = (useLocation().state as { reason?: string } | null)?.reason === 'idle'
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -35,6 +37,10 @@ export function LoginPage() {
       <form className="login-form" onSubmit={handleSubmit}>
         <h1>Sign in</h1>
 
+        {signedOutForInactivity && (
+          <p role="status">You were signed out because of inactivity. Please sign in again.</p>
+        )}
+
         <label htmlFor="username">Username</label>
         <input
           id="username"
@@ -43,6 +49,7 @@ export function LoginPage() {
           value={username}
           onChange={(event) => setUsername(event.target.value)}
           required
+          autoFocus //The HTML Native Alternative
         />
 
         <label htmlFor="password">Password</label>

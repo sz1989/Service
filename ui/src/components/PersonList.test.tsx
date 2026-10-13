@@ -301,3 +301,76 @@ describe('PersonList: row edit mode', () => {
     })
   })
 })
+
+describe('PersonList: busy indicator', () => {
+  // GETs that stay pending until the test answers them, in order. The first N can answer at once.
+  function controlledList(immediate = 0) {
+    const pending: Array<(response: Response) => void> = []
+    let calls = 0
+    const fetchMock = vi.fn((_url: string, _init?: RequestInit) => {
+      calls += 1
+      if (calls <= immediate) return Promise.resolve(jsonResponse([alex, sam]))
+      return new Promise<Response>((resolve) => pending.push(resolve))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    return { answer: (list: Person[]) => pending.shift()!(jsonResponse(list)) }
+  }
+
+  function renderPlain() {
+    render(
+      <MemoryRouter>
+        <PersonList />
+      </MemoryRouter>,
+    )
+  }
+
+  it('keeps the table on screen and shows a spinner in it when the first load is slow', async () => {
+    const { answer } = controlledList()
+    renderPlain()
+
+    const table = await screen.findByRole('table')
+    expect(table).toHaveAttribute('aria-busy', 'true')
+    expect(within(table).getByRole('columnheader', { name: 'Name' })).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument() // not yet: it waits 300 ms
+
+    const spinner = await screen.findByRole('status')
+    expect(spinner).toHaveTextContent('Loading people…')
+    expect(table).toContainElement(spinner)
+    expect(screen.getByRole('button', { name: /Refresh/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Refresh/ }).querySelector('svg')).toHaveClass('spin')
+
+    answer([alex, sam])
+
+    expect(await screen.findByText('Alex Smith')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(table).toHaveAttribute('aria-busy', 'false')
+    expect(screen.getByRole('button', { name: /Refresh/ })).toBeEnabled()
+  })
+
+  it('never shows the spinner when the load is fast', async () => {
+    stubApi()
+    await renderList()
+
+    await new Promise((resolve) => setTimeout(resolve, 400)) // longer than the 300 ms delay
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('keeps the current rows while refreshing and shows the spinner by the pagination', async () => {
+    const { answer } = controlledList(1) // the first load is instant, the refresh is slow
+    renderPlain()
+    await screen.findByText('Alex Smith')
+
+    await userEvent.setup().click(screen.getByRole('button', { name: /Refresh/ }))
+
+    expect(screen.getByText('Alex Smith')).toBeInTheDocument() // the old rows stay
+    const spinner = await screen.findByRole('status')
+    expect(within(screen.getByRole('table')).queryByRole('status')).not.toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'People pages' })).getByRole('status')).toBe(spinner)
+
+    answer([alex, { ...sam, name: 'Samuel Lee' }])
+
+    expect(await screen.findByText('Samuel Lee')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument())
+  })
+})

@@ -105,6 +105,19 @@ button:disabled {
   gap: 8px;
 }
 
+.button-danger {
+  background: var(--danger);
+}
+
+.button-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 85%, black);
+}
+
+.person-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .pagination button {
   padding-top: 5px;
   padding-bottom: 5px;
@@ -113,6 +126,7 @@ button:disabled {
 }
 
 .refresh-button,
+.person-actions button,
 .person-actions button {
   display: inline-flex;
   align-items: center;
@@ -316,6 +330,26 @@ td {
 
 tbody tr {
   cursor: pointer;
+}
+
+table.is-loading tbody {
+  opacity: 0.6;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 tbody tr:hover {

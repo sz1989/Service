@@ -28,10 +28,8 @@ function updateErrorMessage(err: unknown): string {
 export function PersonList() {
   const pageSize = 4
   const { authHeaders, handleUnauthorized } = useAuthedRequest()
-  const { authHeaders, handleUnauthorized } = useAuthedRequest()
   const [page, setPage] = useState(1)
   const [personsState, setPersonsState] = useState<Person[]>([])
-  const [selectedId, setSelectedId] = useState<number | null>(null)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const { data: persons, error, isLoading, execute } = useFetch<Person[]>()
   const { execute: addExecute } = useCreate<NewPerson>()
@@ -48,7 +46,6 @@ export function PersonList() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   )
-  const selectedPerson = visiblePersons.find((p) => p.id === selectedId) ?? visiblePersons[0]
   const selectedPerson = visiblePersons.find((p) => p.id === selectedId) ?? visiblePersons[0]
 
   const loadPersons = () => {
@@ -181,7 +178,6 @@ export function PersonList() {
           type="button"
           onClick={() => setPage((current) => Math.max(1, current - 1))}
           disabled={currentPage === 1 || isEditing}
-          disabled={currentPage === 1 || isEditing}
         >
           Previous
         </button>
@@ -193,23 +189,14 @@ export function PersonList() {
           type="button"
           onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
           disabled={currentPage === totalPages || isEditing}
-          disabled={currentPage === totalPages || isEditing}
         >
           Next
         </button>
           <span aria-live="polite">
             TOTAL: {personsState.length}
           </span>
-          <span aria-live="polite">
-            TOTAL: {personsState.length}
-          </span>
       </nav>
       <PersonActions
-        onAdd={addPerson}
-        onDelete={deletePerson}
-        onEdit={() => selectedPerson && startEditing(selectedPerson.id)}
-        selectedPerson={selectedPerson}
-        isEditing={isEditing}
         onAdd={addPerson}
         onDelete={deletePerson}
         onEdit={() => selectedPerson && startEditing(selectedPerson.id)}
@@ -221,7 +208,6 @@ export function PersonList() {
         <RefreshIcon className={isLoading ? 'spin' : undefined} />
       </button>
     </div>
-    {updateError && <ErrorDialog message={updateError} onClose={() => setUpdateError(null)} />}
     {updateError && <ErrorDialog message={updateError} onClose={() => setUpdateError(null)} />}
     </>
   )

@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "pretest": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest"
   },

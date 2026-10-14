@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import type { NewPerson, Person } from '../api/types'
 import { ApiError } from '../api/ApiError'
 import { AddPersonDialog } from './AddPersonDialog'
@@ -30,16 +30,19 @@ export function PersonActions({ onAdd, onDelete, onEdit, selectedPerson, isEditi
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [isDeleting, startDelete] = useTransition()
 
-  async function confirmDelete() {
+  function confirmDelete() {
     if (!personToDelete) return
     const { id } = personToDelete
     setPersonToDelete(null)
-    try {
-      await onDelete(id)
-    } catch (err) {
-      setDeleteError(deleteErrorMessage(err))
-    }
+    startDelete(async () => {
+        try {
+            await onDelete(id)
+        } catch (err) {
+            setDeleteError(deleteErrorMessage(err))
+        }
+    })
   }
 
   return (
@@ -53,9 +56,9 @@ export function PersonActions({ onAdd, onDelete, onEdit, selectedPerson, isEditi
           <PencilIcon />
           Edit
         </button>
-        <button type="button" className="button-danger" disabled={!selectedPerson || isEditing} onClick={() => setPersonToDelete(selectedPerson ?? null)}>
+        <button type="button" className="button-danger" disabled={!selectedPerson || isEditing || isDeleting} onClick={() => setPersonToDelete(selectedPerson ?? null)}>
           <TrashIcon />
-          Delete
+          {isDeleting ? 'Deleting…' : 'Delete'}
         </button>
       </div>
       {isAddOpen && <AddPersonDialog

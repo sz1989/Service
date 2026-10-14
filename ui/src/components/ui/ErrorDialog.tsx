@@ -2,13 +2,14 @@ import styles from "./ErrorDialog.module.css";
 import { DraggableDialog } from "./DraggableDialog";
 
 interface ErrorDialogProps {
+    title?: string 
     message: string
     onClose: () => void
 }
 
-export function ErrorDialog({ message, onClose }: ErrorDialogProps) {
+export function ErrorDialog({ title = 'Error', message, onClose }: ErrorDialogProps) {
     return (
-        <DraggableDialog title='Error' onClose={onClose}>
+        <DraggableDialog title={title} onClose={onClose}>
             <div className={styles.body}>
                 <p role='alert' className={styles.message}>{message}</p>
                 <div className={styles.buttons}>

@@ -1,4 +1,4 @@
-import { useState, type SubmitEvent } from "react";
+import { useActionState } from "react";
 import type { NewPerson } from "../api/types";
 import styles from "./AddPersonDialog.module.css";
 import { DraggableDialog } from "./ui/DraggableDialog";
@@ -14,34 +14,29 @@ interface PersonAddProps{
 }
 
 export function AddPersonDialog({ onAdd, onCancel }: PersonAddProps) {
-    const [isSaving, setIsSaving] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-
-    async function handleSubmit(e: SubmitEvent<HTMLFormElement>){
-      e.preventDefault()
-      // The inputs are uncontrolled: read their values straight from the form (before any await).
-      const data = new FormData(e.currentTarget)
-      const managerId = String(data.get('managerId'))
+    // _prev is required by useActionState's signature but unused.
+    async function addPersonAction(_prev: string | null, formData: FormData) : Promise<string | null> {
+      const managerId = String(formData.get('managerId'))
       const person: NewPerson = {
-        name: String(data.get('name')),
-        dateOfBirth: String(data.get('dateOfBirth')),
+        name: String(formData.get('name')),
+        dateOfBirth: String(formData.get('dateOfBirth')),
         managerId: managerId === '' ? null : Number(managerId),
-        salary: Number(data.get('salary')),
+        salary: Number(formData.get('salary')),
       }
 
-      setIsSaving(true)
-      setError(null)
       try{
         await onAdd(person)
+        return null
       } catch (err){
-        setError(err instanceof Error ? err.message : 'Save Failed.do')
-        setIsSaving(false)
+        return err instanceof Error ? err.message : 'Save failed.'
       }
     }
 
+    const [error, formAction, isPending] = useActionState(addPersonAction, null)
+
     return (
         <DraggableDialog title='Add Person' onClose={onCancel}>
-            <form className={styles.form} onSubmit={handleSubmit}>
+            <form className={styles.form} action={formAction}>
                 <label htmlFor='person-name'>Name</label>
                 <input id='person-name' name='name' type='text' required />
 
@@ -55,7 +50,7 @@ export function AddPersonDialog({ onAdd, onCancel }: PersonAddProps) {
                 <input id='person-salary' name='salary' type='number' required min={0} />
                 {error &&  <p role='alert' className={styles.error}>{error}</p>}
                 <div className={styles.buttons}>
-                    <button type='submit' disabled={isSaving}>Ok</button>
+                    <button type='submit' disabled={isPending}>Ok</button>
                     <button type='button' onClick={onCancel}>Cancel</button>
                 </div>
             </form>

@@ -30,3 +30,11 @@ If you are developing a production application, we recommend enabling type-aware
 ```
 
 See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+
+## Testing
+
+`npm run test` runs `tsc -b` first (via the `pretest` script in `package.json`), then `vitest run`. If the type-check fails, the tests don't run.
+
+`tsc -b` runs TypeScript in build mode. Plain `tsc` compiles one project, but `-b` follows project references (`tsconfig.app.json` and `tsconfig.node.json`) and builds each one in dependency order. Both projects set `noEmit`, so it only type-checks. Results are cached in `node_modules/.tmp/*.tsbuildinfo`, so repeat runs are fast.
+
+`npm run test:watch` does not run the type-check, because npm only runs `pre<name>` for the exact script name.

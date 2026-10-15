@@ -141,3 +141,77 @@ import type { components } from "@octokit/openapi-types";
 type GithubUser = components["schemas"]["simple-user"];
 
 
+## React Component Hierarchy (Mermaid)
+
+Generated from Madge import analysis of `ui/src`. Rectangles are components, hexagons are hooks. Arrows show imports, not necessarily render nesting.
+
+```mermaid
+flowchart TD
+    main["main.tsx"] --> App
+    main --> AuthContext["AuthContext (provider)"]
+
+    App --> ErrorBoundary
+    App --> ProtectedRoute
+    App --> LoginPage
+    App --> DashboardPage
+
+    ProtectedRoute --> AuthContext
+    LoginPage --> AuthContext
+
+    DashboardPage --> ChatPanel
+    DashboardPage --> PersonList
+    DashboardPage --> RagSearchPanel
+    DashboardPage --> SessionTimeoutDialog
+    DashboardPage --> useIdleLogout{{useIdleLogout}}
+    DashboardPage --> AuthContext
+
+    %% Chat
+    ChatPanel --> useChatHub{{useChatHub}}
+    ChatPanel --> AuthContext
+
+    %% RAG
+    RagSearchPanel --> IngestPanel
+    RagSearchPanel --> useAuthedRequest{{useAuthedRequest}}
+    RagSearchPanel --> useFetch{{useFetch}}
+    IngestPanel --> useAuthedRequest
+    IngestPanel --> useFetch
+
+    %% People
+    PersonList --> PersonActions
+    PersonList --> PersonEditRow
+    PersonList --> ErrorDialog
+    PersonList --> Spinner
+    PersonList --> RefreshIcon
+    PersonList --> useAuthedRequest
+    PersonList --> useFetch
+    PersonList --> useCreate{{useCreate}}
+    PersonList --> useUpdate{{useUpdate}}
+    PersonList --> useDelete{{useDelete}}
+    PersonList --> useDelayedFlag{{useDelayedFlag}}
+
+    PersonActions --> AddPersonDialog
+    PersonActions --> ConfirmDialog
+    PersonActions --> ErrorDialog
+    PersonActions --> PencilIcon
+    PersonActions --> PlusIcon
+    PersonActions --> TrashIcon
+
+    %% Shared dialogs
+    AddPersonDialog --> DraggableDialog
+    ConfirmDialog --> DraggableDialog
+    ErrorDialog --> DraggableDialog
+    SessionTimeoutDialog --> DraggableDialog
+
+    %% Hook layer
+    AuthContext --> useFetch
+    useAuthedRequest --> AuthContext
+    useCreate --> useRequest{{useRequest}}
+    useUpdate --> useRequest
+    useDelete --> useRequest
+    useFetch --> useRequest
+
+    classDef page fill:#dbeafe,stroke:#2563eb
+    classDef shared fill:#fef3c7,stroke:#d97706
+    class LoginPage,DashboardPage page
+    class DraggableDialog,ErrorDialog,ConfirmDialog,Spinner shared
+```

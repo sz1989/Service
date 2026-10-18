@@ -5,7 +5,7 @@ import { PERSON_URL } from '../api/config'
 import { useAuthedRequest } from '../hooks/useAuthedRequest'
 import { useCreate } from '../hooks/useCreate'
 import { useDelayedFlag } from '../hooks/useDelayedFlag'
-import { useDelete } from '../hooks/useDelete'
+import { useDeletePerson } from '../hooks/useDeletePerson'
 import { useUpdate } from '../hooks/useUpdate'
 import { RefreshIcon } from './ui/icons/RefreshIcon'
 import { PersonActions } from './PersonActions'
@@ -33,7 +33,7 @@ export function PersonList() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const { data: persons, error, isFetching, refetch } = usePeople()
   const { execute: addExecute } = useCreate<NewPerson>()
-  const { execute: deleteExecute } = useDelete()
+  const { mutateAsync: deletePerson } = useDeletePerson()
   const { execute: updateExecute } = useUpdate<Person>()
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -72,18 +72,6 @@ export function PersonList() {
     if (editingId === null) {
       setSelectedId(id)
       setEditingId(id)
-    }
-  }
-
-  const deletePerson = async (id: number) => {
-    try {
-      await deleteExecute(`${PERSON_URL}/${id}`, {
-        headers: authHeaders,
-      })
-      await refetch()
-    } catch (err) {
-      handleUnauthorized(err)
-      throw err
     }
   }
 

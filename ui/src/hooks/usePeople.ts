@@ -7,7 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useAuthedRequest } from './useAuthedRequest'
 
 // Loads the people list. The token is part of the key so a new login never sees the previous
-// user's cached list.
+// user's cached list
 export function usePeople() {
   const { token } = useAuth()
   const { authHeaders, handleUnauthorized } = useAuthedRequest()
@@ -16,7 +16,9 @@ export function usePeople() {
     queryKey: ['people', token],
     queryFn: async () => {
       try {
-        return await request<Person[]>(`${PERSON_URL}/All`, { headers: authHeaders })
+        return await request<Person[]>(`${PERSON_URL}/All`, {
+          headers: authHeaders,
+        })
       } catch (err) {
         handleUnauthorized(err)
         throw err // rethrown so the query still ends in its error state

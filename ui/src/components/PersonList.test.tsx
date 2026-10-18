@@ -5,8 +5,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Person } from '../api/types'
 import { API_BASE_URL } from '../api/config'
 import { PersonList } from './PersonList'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const logout = vi.fn()
+
+function renderWithProviders(ui: React.ReactElement){
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false}}
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>
+  )
+}
 
 vi.mock('../auth/AuthContext', () => ({
   useAuth: () => ({ token: 'test-token', logout }),
@@ -35,11 +47,7 @@ function putCalls(fetchMock: ReturnType<typeof stubApi>) {
 }
 
 async function renderList() {
-  render(
-    <MemoryRouter>
-      <PersonList />
-    </MemoryRouter>,
-  )
+  renderWithProviders(<PersonList />)
   await screen.findByText('Alex Smith')
 }
 
@@ -317,11 +325,7 @@ describe('PersonList: busy indicator', () => {
   }
 
   function renderPlain() {
-    render(
-      <MemoryRouter>
-        <PersonList />
-      </MemoryRouter>,
-    )
+    renderWithProviders(<PersonList />)
   }
 
   it('keeps the table on screen and shows a spinner in it when the first load is slow', async () => {

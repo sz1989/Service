@@ -1,19 +1,18 @@
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { NewPerson, Person } from '../api/types'
 import { ApiError } from '../api/ApiError'
+import { PERSON_URL } from '../api/config'
 import { useAuthedRequest } from '../hooks/useAuthedRequest'
-import { useCreate } from '../hooks/useCreate'
-import { useFetch } from '../hooks/useFetch'
+import { useApiMutation } from '../hooks/useApiMutation'
 import { useDelayedFlag } from '../hooks/useDelayedFlag'
-import { useDelete } from '../hooks/useDelete'
 import { useUpdate } from '../hooks/useUpdate'
 import { RefreshIcon } from './ui/icons/RefreshIcon'
 import { PersonActions } from './PersonActions'
 import { PersonEditRow } from './PersonEditRow'
 import { ErrorDialog } from './ui/ErrorDialog'
 import { Spinner } from './ui/Spinner'
+import { usePeople } from '../hooks/usePeople'
 
-const PERSON_URL = '/V2/Person'
 // A load that finishes sooner than this never shows the busy indicator (it would only flash).
 const SPINNER_DELAY_MS = 300
 
@@ -31,14 +30,20 @@ export function PersonList() {
   const [page, setPage] = useState(1)
   const [personsState, setPersonsState] = useState<Person[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const { data: persons, error, isLoading, execute } = useFetch<Person[]>()
-  const { execute: addExecute } = useCreate<NewPerson>()
-  const { execute: deleteExecute } = useDelete()
+  const { data: persons, error, isFetching, refetch } = usePeople()
+  const { mutateAsync: addPerson } = useApiMutation<NewPerson>({
+    method: 'POST',
+    path: () => PERSON_URL,
+  })
+  const { mutateAsync: deletePerson } = useApiMutation<number>({
+    method: 'DELETE',
+    path: (id) => `${PERSON_URL}/${id}`,
+  })
   const { execute: updateExecute } = useUpdate<Person>()
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const isEditing = editingId !== null
-  const showSpinner = useDelayedFlag(isLoading, SPINNER_DELAY_MS)
+  const showSpinner = useDelayedFlag(isFetching, SPINNER_DELAY_MS)
 
   const totalPages = Math.max(1, Math.ceil(personsState.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -47,12 +52,6 @@ export function PersonList() {
     currentPage * pageSize,
   )
   const selectedPerson = visiblePersons.find((p) => p.id === selectedId) ?? visiblePersons[0]
-
-  const loadPersons = () => {
-    execute(`${PERSON_URL}/All`, {
-      headers: authHeaders,
-    }).catch(handleUnauthorized)
-  }
 
   const updatePerson = async (person: Person) => {
     try {
@@ -81,50 +80,18 @@ export function PersonList() {
     }
   }
 
-  const deletePerson = async (id: number) => {
-    try {
-      await deleteExecute(`${PERSON_URL}/${id}`, {
-        headers: authHeaders,
-      })
-      loadPersons() // or filiter out setPersonsState((current) => current.filter((person) => person.id !== id))}
-    } catch (err) {
-      handleUnauthorized(err)
-      throw err
-    }
-  }
-
-  const addPerson = async (newPerson: NewPerson) => {
-    try{
-    await addExecute(PERSON_URL,
-      newPerson, {
-      headers: authHeaders,
-    })
-    loadPersons()
-    } catch (err) {
-      handleUnauthorized(err)
-      throw err
-    }
-  }
-
-  // Load when the page opens and whenever the login (token) changes. The effect event always runs
-  // the latest loadPersons without making the effect depend on it.
-  const loadOnTokenChange = useEffectEvent(loadPersons)
-  useEffect(() => {
-    loadOnTokenChange()
-  }, [authHeaders])
-
   useEffect(() => {
     setPage(1)
     setPersonsState(persons ?? [])
   }, [persons])
 
   if (error) {
-    return <p className="error">{error}</p>
+    return <p className="error">{error instanceof ApiError ? error.message : 'Network error.'}</p>
   }
 
   return (
     <>
-    <table aria-busy={isLoading} className={showSpinner ? 'is-loading' : undefined}>
+    <table aria-busy={isFetching} className={showSpinner ? 'is-loading' : undefined}>
       <thead>
         <tr>
           <th>Id</th>
@@ -162,7 +129,7 @@ export function PersonList() {
         {visiblePersons.length === 0 && (
           <tr>
             <td colSpan={6}>
-              {persons === null ? (
+              {persons === undefined ? (
                 showSpinner && <Spinner label="Loading people…" />
               ) : (
                 'No persons found.'
@@ -203,9 +170,9 @@ export function PersonList() {
         selectedPerson={selectedPerson}
         isEditing={isEditing}
       />
-      <button type="button" className="pagination refresh-button" disabled={isEditing || isLoading} onClick={loadPersons}>
+      <button type="button" className="pagination refresh-button" disabled={isEditing || isFetching} onClick={() => refetch()}>
         Refresh
-        <RefreshIcon className={isLoading ? 'spin' : undefined} />
+        <RefreshIcon className={isFetching ? 'spin' : undefined} />
       </button>
     </div>
     {updateError && <ErrorDialog message={updateError} onClose={() => setUpdateError(null)} />}

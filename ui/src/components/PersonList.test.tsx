@@ -5,8 +5,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Person } from '../api/types'
 import { API_BASE_URL } from '../api/config'
 import { PersonList } from './PersonList'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const logout = vi.fn()
+
+function renderWithProviders(ui: React.ReactElement){
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false}}
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>
+  )
+}
 
 vi.mock('../auth/AuthContext', () => ({
   useAuth: () => ({ token: 'test-token', logout }),
@@ -35,11 +47,7 @@ function putCalls(fetchMock: ReturnType<typeof stubApi>) {
 }
 
 async function renderList() {
-  render(
-    <MemoryRouter>
-      <PersonList />
-    </MemoryRouter>,
-  )
+  renderWithProviders(<PersonList />)
   await screen.findByText('Alex Smith')
 }
 
@@ -317,11 +325,7 @@ describe('PersonList: busy indicator', () => {
   }
 
   function renderPlain() {
-    render(
-      <MemoryRouter>
-        <PersonList />
-      </MemoryRouter>,
-    )
+    renderWithProviders(<PersonList />)
   }
 
   it('keeps the table on screen and shows a spinner in it when the first load is slow', async () => {
@@ -372,5 +376,145 @@ describe('PersonList: busy indicator', () => {
 
     expect(await screen.findByText('Samuel Lee')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument())
+  })
+})
+
+describe('PersonList: add and delete', () => {
+  // A tiny in-memory API: GET lists, POST adds and DELETE removes, so the reload that follows a
+  // write shows the change. A test can force POST or DELETE to answer with an error status.
+  function stubCrudApi({ postStatus, deleteStatus }: { postStatus?: number; deleteStatus?: number } = {}) {
+    let people = [alex, sam]
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET'
+      const forced = method === 'POST' ? postStatus : method === 'DELETE' ? deleteStatus : undefined
+      if (forced) return Promise.resolve(new Response('', { status: forced }))
+
+      if (method === 'POST') {
+        const created: Person = { id: 3, ...JSON.parse(init!.body as string) }
+        people = [...people, created]
+        return Promise.resolve(jsonResponse(created))
+      }
+      if (method === 'DELETE') {
+        const id = Number(url.split('/').pop())
+        people = people.filter((p) => p.id !== id)
+        return Promise.resolve(new Response(null, { status: 204 }))
+      }
+      return Promise.resolve(jsonResponse(people))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  function callsOf(fetchMock: ReturnType<typeof stubCrudApi>, method: string) {
+    return fetchMock.mock.calls.filter(([, init]) => init?.method === method)
+  }
+
+  async function openAddDialogAndFill(user: User) {
+    await user.click(screen.getByRole('button', { name: 'Add' }))
+    await fill(user, 'Name', 'Casey Jones')
+    await fill(user, 'Date of birth', '1992-03-04')
+    await fill(user, 'Salary', '70000')
+  }
+
+  async function confirmDelete(user: User) {
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }))
+  }
+
+  describe('Add', () => {
+    it('sends one POST with the token, then shows the new person from the reloaded list', async () => {
+      const user = userEvent.setup()
+      const fetchMock = stubCrudApi()
+      await renderList()
+
+      await openAddDialogAndFill(user)
+      await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Ok' }))
+
+      expect(await screen.findByText('Casey Jones')).toBeInTheDocument()
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+      expect(callsOf(fetchMock, 'POST')).toHaveLength(1)
+      const [[url, init]] = callsOf(fetchMock, 'POST')
+      expect(url).toBe(`${API_BASE_URL}/V2/Person`)
+      expect(init!.headers).toMatchObject({ Authorization: 'Bearer test-token' })
+      expect(JSON.parse(init!.body as string)).toEqual({
+        name: 'Casey Jones',
+        dateOfBirth: '1992-03-04',
+        managerId: null,
+        salary: 70000,
+      })
+      expect(screen.getByText('TOTAL: 3')).toBeInTheDocument()
+    })
+
+    it('keeps the dialog open with the error when the server refuses', async () => {
+      const user = userEvent.setup()
+      stubCrudApi({ postStatus: 403 })
+      await renderList()
+
+      await openAddDialogAndFill(user)
+      await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Ok' }))
+
+      expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent('403')
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+      expect(screen.queryByText('Casey Jones')).not.toBeInTheDocument()
+      expect(screen.getByText('TOTAL: 2')).toBeInTheDocument()
+      expect(logout).not.toHaveBeenCalled()
+    })
+
+    it('logs out on a 401', async () => {
+      const user = userEvent.setup()
+      stubCrudApi({ postStatus: 401 })
+      await renderList()
+
+      await openAddDialogAndFill(user)
+      await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Ok' }))
+
+      await waitFor(() => expect(logout).toHaveBeenCalledTimes(1))
+    })
+  })
+
+  describe('Delete', () => {
+    it('sends one DELETE for the selected person once confirmed, then drops the row', async () => {
+      const user = userEvent.setup()
+      const fetchMock = stubCrudApi()
+      await renderList()
+
+      await user.click(screen.getByText('Sam Lee'))
+      await user.click(screen.getByRole('button', { name: 'Delete' }))
+      expect(callsOf(fetchMock, 'DELETE')).toHaveLength(0) // nothing is sent before the confirmation
+      await confirmDelete(user)
+
+      await waitFor(() => expect(screen.queryByText('Sam Lee')).not.toBeInTheDocument())
+      expect(screen.getByText('Alex Smith')).toBeInTheDocument()
+      expect(screen.getByText('TOTAL: 1')).toBeInTheDocument()
+
+      expect(callsOf(fetchMock, 'DELETE')).toHaveLength(1)
+      const [[url, init]] = callsOf(fetchMock, 'DELETE')
+      expect(url).toBe(`${API_BASE_URL}/V2/Person/2`)
+      expect(init!.headers).toMatchObject({ Authorization: 'Bearer test-token' })
+      expect(init!.body).toBeUndefined()
+    })
+
+    it('says the person no longer exists on a 404 and keeps the list', async () => {
+      const user = userEvent.setup()
+      stubCrudApi({ deleteStatus: 404 })
+      await renderList()
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }))
+      await confirmDelete(user)
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('This person no longer exists.')
+      expect(screen.getByText('Sam Lee')).toBeInTheDocument()
+    })
+
+    it('logs out on a 401', async () => {
+      const user = userEvent.setup()
+      stubCrudApi({ deleteStatus: 401 })
+      await renderList()
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }))
+      await confirmDelete(user)
+
+      await waitFor(() => expect(logout).toHaveBeenCalledTimes(1))
+    })
   })
 })

@@ -3,9 +3,8 @@ import type { NewPerson, Person } from '../api/types'
 import { ApiError } from '../api/ApiError'
 import { PERSON_URL } from '../api/config'
 import { useAuthedRequest } from '../hooks/useAuthedRequest'
-import { useCreate } from '../hooks/useCreate'
+import { useApiMutation } from '../hooks/useApiMutation'
 import { useDelayedFlag } from '../hooks/useDelayedFlag'
-import { useDeletePerson } from '../hooks/useDeletePerson'
 import { useUpdate } from '../hooks/useUpdate'
 import { RefreshIcon } from './ui/icons/RefreshIcon'
 import { PersonActions } from './PersonActions'
@@ -32,8 +31,14 @@ export function PersonList() {
   const [personsState, setPersonsState] = useState<Person[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const { data: persons, error, isFetching, refetch } = usePeople()
-  const { execute: addExecute } = useCreate<NewPerson>()
-  const { mutateAsync: deletePerson } = useDeletePerson()
+  const { mutateAsync: addPerson } = useApiMutation<NewPerson>({
+    method: 'POST',
+    path: () => PERSON_URL,
+  })
+  const { mutateAsync: deletePerson } = useApiMutation<number>({
+    method: 'DELETE',
+    path: (id) => `${PERSON_URL}/${id}`,
+  })
   const { execute: updateExecute } = useUpdate<Person>()
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -72,19 +77,6 @@ export function PersonList() {
     if (editingId === null) {
       setSelectedId(id)
       setEditingId(id)
-    }
-  }
-
-  const addPerson = async (newPerson: NewPerson) => {
-    try{
-    await addExecute(PERSON_URL,
-      newPerson, {
-      headers: authHeaders,
-    })
-    await refetch()
-    } catch (err) {
-      handleUnauthorized(err)
-      throw err
     }
   }
 

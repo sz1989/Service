@@ -314,6 +314,17 @@ describe('PersonList: row edit mode', () => {
   })
 })
 
+describe('PersonList: order', () => {
+  it('lists people sorted by id, whatever order the server returns them in', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(jsonResponse([sam, alex]))))
+    renderWithProviders(<PersonList />)
+    await screen.findByText('Alex Smith')
+
+    const idCells = screen.getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell')[0])
+    expect(idCells.map((cell) => cell.textContent)).toEqual(['1', '2'])
+  })
+})
+
 describe('PersonList: busy indicator', () => {
   // GETs that stay pending until the test answers them, in order. The first N can answer at once.
   function controlledList(immediate = 0) {

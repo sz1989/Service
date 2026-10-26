@@ -61,14 +61,16 @@ internal static class Noted
     
     public static int RomanToInt(string s)
     {
-        var dic = new Dictionary<char, int>();
-        dic.Add('I', 1);
-        dic.Add('V', 5);
-        dic.Add('X', 10);
-        dic.Add('L', 50);
-        dic.Add('C', 100);
-        dic.Add('D', 500);
-        dic.Add('M', 1000);
+        var dic = new Dictionary<char, int>
+        {
+            { 'I', 1 },
+            { 'V', 5 },
+            { 'X', 10 },
+            { 'L', 50 },
+            { 'C', 100 },
+            { 'D', 500 },
+            { 'M', 1000 }
+        };
 
         int ret = 0;
         int len = s.Length;

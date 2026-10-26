@@ -18,7 +18,7 @@ An ASP.NET Core 10 Web API for managing person records, secured with JWT bearer 
 [![RAG](https://img.shields.io/badge/RAG-Retrieval%20Augmented%20Generation-512BD4)](https://learn.microsoft.com/dotnet/ai/conceptual/rag) [![pgvector](https://img.shields.io/badge/pgvector-Vector%20Search-316192?logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector) [![Pgvector.NET](https://img.shields.io/badge/Pgvector.NET-0.3-316192)](https://github.com/pgvector/pgvector-dotnet) [![nomic-embed-text](https://img.shields.io/badge/nomic--embed--text-Embeddings-000000?logo=ollama&logoColor=white)](https://ollama.com/library/nomic-embed-text)  
 [![JWT](https://img.shields.io/badge/JWT-Bearer%20Auth-000000?logo=jsonwebtokens&logoColor=white)](https://jwt.io/) [![RBAC](https://img.shields.io/badge/Authorization-Role--Based%20(RBAC)-6DB33F)](https://learn.microsoft.com/aspnet/core/security/authorization/roles) [![Health Checks](https://img.shields.io/badge/Health%20Checks-ASP.NET%20Core-6DB33F)](https://learn.microsoft.com/aspnet/core/host-and-deploy/health-checks)  
 [![Serilog](https://img.shields.io/badge/Serilog-Logging-4E0A80)](https://serilog.net/) [![Seq](https://img.shields.io/badge/Seq-Structured%20Logs-005A9C)](https://datalust.co/seq) [![OpenAPI](https://img.shields.io/badge/OpenAPI-Swagger-85EA2D?logo=swagger&logoColor=white)](https://swagger.io/) [![Scalar](https://img.shields.io/badge/Scalar-API%20Reference-1A1A1A)](https://scalar.com/) [![API Versioning](https://img.shields.io/badge/Asp.Versioning-API%20Versioning-512BD4)](https://github.com/dotnet/aspnet-api-versioning) [![Model%20Context%20Protocol](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-00ADEF)](https://modelcontextprotocol.org/) [![Polly](https://img.shields.io/badge/Polly-Resilience-7B68EE)](https://www.pollydocs.org/)  
-[![xUnit](https://img.shields.io/badge/xUnit-Tests-CC2927?logo=xunit&logoColor=white)](https://xunit.net/) [![Coverlet](https://img.shields.io/badge/Coverlet-Code%20Coverage-CC2927)](https://github.com/coverlet-coverage/coverlet) [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions) [![Central Package Management](https://img.shields.io/badge/NuGet-Central%20Package%20Management-004880?logo=nuget&logoColor=white)](https://learn.microsoft.com/nuget/consume-packages/central-package-management)
+[![xUnit](https://img.shields.io/badge/xUnit-Tests-CC2927?logo=xunit&logoColor=white)](https://xunit.net/) [![Code Coverage](https://img.shields.io/badge/Microsoft.Testing-Code%20Coverage-CC2927)](https://learn.microsoft.com/dotnet/core/testing/microsoft-testing-platform-extensions-code-coverage) [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions) [![Central Package Management](https://img.shields.io/badge/NuGet-Central%20Package%20Management-004880?logo=nuget&logoColor=white)](https://learn.microsoft.com/nuget/consume-packages/central-package-management)
 
 ### UI
 
@@ -120,8 +120,18 @@ curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh admin)" https:
 ## Testing
 
 ```bash
-dotnet test ./Service.slnx --collect:"XPlat Code Coverage"
+dotnet test ./Service.slnx
+
+# with code coverage (Cobertura XML written to ./coverage)
+dotnet test ./Service.slnx --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml --results-directory ./coverage
 ```
+
+> **Note:** The tests use xUnit v3 (`xunit.v3`), which runs on Microsoft.Testing.Platform rather than VSTest.
+>
+> - `tests/Service.Tests` sets `<OutputType>Exe</OutputType>` because an xUnit v3 test project is a standalone executable.
+> - `global.json` opts `dotnet test` into the Microsoft.Testing.Platform runner, which .NET 10 SDK requires for xUnit v3.
+> - You can also run the tests directly with `dotnet run --project tests/Service.Tests`.
+> - VSTest-style arguments such as `--collect:"XPlat Code Coverage"` (Coverlet's `coverlet.collector`) no longer work. Coverage uses the `Microsoft.Testing.Extensions.CodeCoverage` extension and its `--coverage` option instead.
 
 ## Reference
 

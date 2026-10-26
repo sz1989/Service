@@ -80,7 +80,7 @@ services:
       - personnet
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:9.18
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
@@ -88,11 +88,12 @@ services:
       - "8080:80"
     restart: unless-stopped
     volumes:
-      - ./db/query:/var/lib/pgadmin/storage/query:ro
+      - pgadmin_data:/var/lib/pgadmin
+      - ./db/query:/queries:ro
     depends_on:
       - db
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/login || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:80/misc/ping || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -133,6 +134,7 @@ volumes:
   db_data:
   seq_data:
   redis_data:
+  pgadmin_data:
 
 networks:
   personnet:

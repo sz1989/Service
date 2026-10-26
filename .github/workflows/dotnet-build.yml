@@ -39,7 +39,7 @@ jobs:
     - name: Run Tests
       run: >
         dotnet test ./Service.slnx --configuration Release --no-restore --no-build
-        --collect:"XPlat Code Coverage"
+        --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
         --results-directory ./coverage
 
     # Step 6: Turn the raw Cobertura output into a human-readable report + summary

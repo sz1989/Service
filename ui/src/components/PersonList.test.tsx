@@ -31,13 +31,17 @@ function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 }
 
-// GET returns the list; the PUT response is chosen by each test.
+// GET returns the list; the PUT response is chosen by each test. A successful PUT updates the
+// list, so the reload that follows a save shows the change.
 function stubApi(putResponse: (body: Person) => Response = (body) => jsonResponse(body)) {
-  const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
-    Promise.resolve(
-      init?.method === 'PUT' ? putResponse(JSON.parse(init.body as string)) : jsonResponse([alex, sam]),
-    ),
-  )
+  let people = [alex, sam]
+  const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
+    if (init?.method !== 'PUT') return Promise.resolve(jsonResponse(people))
+    const body = JSON.parse(init.body as string) as Person
+    const response = putResponse(body)
+    if (response.ok) people = people.map((p) => (p.id === body.id ? body : p))
+    return Promise.resolve(response)
+  })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
@@ -119,7 +123,7 @@ describe('PersonList: row edit mode', () => {
     expect(within(screen.getByRole('row', { name: /Save/ })).getAllByRole('cell')[0]).toHaveTextContent('1')
   })
 
-  it('saves every changed field with one PUT, then shows the saved row without reloading', async () => {
+  it('saves every changed field with one PUT, then shows the saved row from the reloaded list', async () => {
     const user = userEvent.setup()
     const fetchMock = stubApi()
     await renderList()
@@ -148,7 +152,7 @@ describe('PersonList: row edit mode', () => {
       salary: 55000,
     })
     expect(init!.headers).toEqual({ 'Content-Type': 'application/json', Authorization: 'Bearer test-token' })
-    expect(fetchMock.mock.calls.length).toBe(requestsBefore + 1) // no list reload
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBe(requestsBefore + 2)) // the PUT, then the list reload
   })
 
   it('saves with Enter and sends an empty Manager Id as null', async () => {
@@ -307,6 +311,68 @@ describe('PersonList: row edit mode', () => {
       await waitFor(() => expect(logout).toHaveBeenCalledTimes(1))
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
+  })
+})
+
+describe('PersonList: order', () => {
+  it('lists people sorted by id, whatever order the server returns them in', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(jsonResponse([sam, alex]))))
+    renderWithProviders(<PersonList />)
+    await screen.findByText('Alex Smith')
+
+    const idCells = screen.getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell')[0])
+    expect(idCells.map((cell) => cell.textContent)).toEqual(['1', '2'])
+  })
+
+  it('marks the Id column as the ascending sort', async () => {
+    stubApi()
+    await renderList()
+
+    expect(screen.getByRole('columnheader', { name: 'Id' })).toHaveAttribute('aria-sort', 'ascending')
+    expect(screen.getByRole('columnheader', { name: 'Name' })).not.toHaveAttribute('aria-sort')
+  })
+
+  it('reverses the order when the Id header is clicked, and back again on a second click', async () => {
+    const user = userEvent.setup()
+    stubApi()
+    await renderList()
+    const ids = () =>
+      screen
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => within(row).getAllByRole('cell')[0].textContent)
+
+    await user.click(screen.getByRole('button', { name: 'Id' }))
+    expect(ids()).toEqual(['2', '1'])
+    expect(screen.getByRole('columnheader', { name: 'Id' })).toHaveAttribute('aria-sort', 'descending')
+
+    await user.click(screen.getByRole('button', { name: 'Id' }))
+    expect(ids()).toEqual(['1', '2'])
+    expect(screen.getByRole('columnheader', { name: 'Id' })).toHaveAttribute('aria-sort', 'ascending')
+  })
+
+  it('keeps the chosen order after a save reloads the list', async () => {
+    const user = userEvent.setup()
+    stubApi()
+    await renderList()
+
+    await user.click(screen.getByRole('button', { name: 'Id' })) // descending: Sam first
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    await fill(user, 'Name', 'Samuel Lee')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByText('Samuel Lee')).toBeInTheDocument()
+    expect(screen.getAllByRole('row')[1]).toHaveTextContent('Samuel Lee')
+  })
+
+  it('disables the Id header while a row is being edited', async () => {
+    const user = userEvent.setup()
+    stubApi()
+    await renderList()
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+
+    expect(screen.getByRole('button', { name: 'Id' })).toBeDisabled()
   })
 })
 

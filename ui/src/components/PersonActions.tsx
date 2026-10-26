@@ -26,7 +26,13 @@ function deleteErrorMessage(err: unknown): string {
   return 'Delete failed. Please try again.'
 }
 
-export function PersonActions({ onAdd, onDelete, onEdit, selectedPerson, isEditing }: PersonActionsProps) {
+export function PersonActions({
+  onAdd,
+  onDelete,
+  onEdit,
+  selectedPerson,
+  isEditing,
+}: PersonActionsProps) {
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -37,11 +43,11 @@ export function PersonActions({ onAdd, onDelete, onEdit, selectedPerson, isEditi
     const { id } = personToDelete
     setPersonToDelete(null)
     startDelete(async () => {
-        try {
-            await onDelete(id)
-        } catch (err) {
-            setDeleteError(deleteErrorMessage(err))
-        }
+      try {
+        await onDelete(id)
+      } catch (err) {
+        setDeleteError(deleteErrorMessage(err))
+      }
     })
   }
 
@@ -52,24 +58,43 @@ export function PersonActions({ onAdd, onDelete, onEdit, selectedPerson, isEditi
           <PlusIcon />
           Add
         </button>
-        <button type="button" className="button-secondary" disabled={!selectedPerson || isEditing} onClick={onEdit}>
+        <button
+          type="button"
+          className="button-secondary"
+          disabled={!selectedPerson || isEditing}
+          onClick={onEdit}
+        >
           <PencilIcon />
           Edit
         </button>
-        <button type="button" className="button-danger" disabled={!selectedPerson || isEditing || isDeleting} onClick={() => setPersonToDelete(selectedPerson ?? null)}>
+        <button
+          type="button"
+          className="button-danger"
+          disabled={!selectedPerson || isEditing || isDeleting}
+          onClick={() => setPersonToDelete(selectedPerson ?? null)}
+        >
           <TrashIcon />
           {isDeleting ? 'Deleting…' : 'Delete'}
         </button>
       </div>
-      {isAddOpen && <AddPersonDialog
-        onAdd={async (p) => {await onAdd(p); setIsAddOpen(false)}}
-        onCancel={() => setIsAddOpen(false)} />}
-      {personToDelete && <ConfirmDialog
-        title='Delete Person'
-        message={`Delete ${personToDelete.name} (id ${personToDelete.id})? This cannot be undone.`}
-        confirmLabel='Delete'
-        onConfirm={confirmDelete}
-        onCancel={() => setPersonToDelete(null)} />}
+      {isAddOpen && (
+        <AddPersonDialog
+          onAdd={async (p) => {
+            await onAdd(p)
+            setIsAddOpen(false)
+          }}
+          onCancel={() => setIsAddOpen(false)}
+        />
+      )}
+      {personToDelete && (
+        <ConfirmDialog
+          title="Delete Person"
+          message={`Delete ${personToDelete.name} (id ${personToDelete.id})? This cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={confirmDelete}
+          onCancel={() => setPersonToDelete(null)}
+        />
+      )}
       {deleteError && <ErrorDialog message={deleteError} onClose={() => setDeleteError(null)} />}
     </>
   )

@@ -331,6 +331,49 @@ describe('PersonList: order', () => {
     expect(screen.getByRole('columnheader', { name: 'Id' })).toHaveAttribute('aria-sort', 'ascending')
     expect(screen.getByRole('columnheader', { name: 'Name' })).not.toHaveAttribute('aria-sort')
   })
+
+  it('reverses the order when the Id header is clicked, and back again on a second click', async () => {
+    const user = userEvent.setup()
+    stubApi()
+    await renderList()
+    const ids = () =>
+      screen
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => within(row).getAllByRole('cell')[0].textContent)
+
+    await user.click(screen.getByRole('button', { name: 'Id' }))
+    expect(ids()).toEqual(['2', '1'])
+    expect(screen.getByRole('columnheader', { name: 'Id' })).toHaveAttribute('aria-sort', 'descending')
+
+    await user.click(screen.getByRole('button', { name: 'Id' }))
+    expect(ids()).toEqual(['1', '2'])
+    expect(screen.getByRole('columnheader', { name: 'Id' })).toHaveAttribute('aria-sort', 'ascending')
+  })
+
+  it('keeps the chosen order after a save reloads the list', async () => {
+    const user = userEvent.setup()
+    stubApi()
+    await renderList()
+
+    await user.click(screen.getByRole('button', { name: 'Id' })) // descending: Sam first
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    await fill(user, 'Name', 'Samuel Lee')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByText('Samuel Lee')).toBeInTheDocument()
+    expect(screen.getAllByRole('row')[1]).toHaveTextContent('Samuel Lee')
+  })
+
+  it('disables the Id header while a row is being edited', async () => {
+    const user = userEvent.setup()
+    stubApi()
+    await renderList()
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+
+    expect(screen.getByRole('button', { name: 'Id' })).toBeDisabled()
+  })
 })
 
 describe('PersonList: busy indicator', () => {

@@ -1,6 +1,7 @@
 import type { SVGProps } from 'react'
 
-export function SortAscendingIcon(props: SVGProps<SVGSVGElement>) {
+// Points up; rotate it (see .sort-indicator.descending) for a descending sort.
+export function SortArrowIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

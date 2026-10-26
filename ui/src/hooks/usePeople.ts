@@ -24,8 +24,6 @@ export function usePeople() {
         throw err // rethrown so the query still ends in its error state
       }
     },
-    // Always sorted by id, whatever order the server returns, so a save never reshuffles the rows.
-    select: (people) => [...people].sort((a, b) => a.id - b.id),
     // A 4xx will not fix itself, so only retry network and server errors.
     retry: (failureCount, err) =>
       !(err instanceof ApiError && err.status < 500) && failureCount < 2,

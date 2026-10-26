@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { NewPerson, Person } from '../api/types'
 import { ApiError } from '../api/ApiError'
 import { PERSON_URL } from '../api/config'
 import { useApiMutation } from '../hooks/useApiMutation'
 import { useDelayedFlag } from '../hooks/useDelayedFlag'
 import { RefreshIcon } from './ui/icons/RefreshIcon'
-import { SortAscendingIcon } from './ui/icons/SortAscendingIcon'
+import { SortArrowIcon } from './ui/icons/SortArrowIcon'
 import { PersonActions } from './PersonActions'
 import { PersonEditRow } from './PersonEditRow'
 import { ErrorDialog } from './ui/ErrorDialog'
@@ -14,6 +14,8 @@ import { usePeople } from '../hooks/usePeople'
 
 // A load that finishes sooner than this never shows the busy indicator (it would only flash).
 const SPINNER_DELAY_MS = 300
+
+type SortDirection = 'ascending' | 'descending'
 
 function updateErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
@@ -28,7 +30,11 @@ export function PersonList() {
   const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const { data: persons, error, isFetching, refetch } = usePeople()
-  const people = persons ?? []
+  const [sortDirection, setSortDirection] = useState<SortDirection>('ascending')
+  const people = useMemo(() => {
+    const direction = sortDirection === 'ascending' ? 1 : -1
+    return [...(persons ?? [])].sort((a, b) => direction * (a.id - b.id))
+  }, [persons, sortDirection])
   const { mutateAsync: addPerson } = useApiMutation<NewPerson>({
     method: 'POST',
     path: () => PERSON_URL,
@@ -67,6 +73,11 @@ export function PersonList() {
     setEditingId(null)
   }
 
+  const toggleSort = () => {
+    setSortDirection((current) => (current === 'ascending' ? 'descending' : 'ascending'))
+    setPage(1)
+  }
+
   const startEditing = (id: number) => {
     if (editingId === null) {
       setSelectedId(id)
@@ -83,10 +94,19 @@ export function PersonList() {
       <table aria-busy={isFetching} className={showSpinner ? 'is-loading' : undefined}>
         <thead>
           <tr>
-            <th aria-sort="ascending">
-            Id
-            <SortAscendingIcon className="sort-indicator" />
-          </th>
+            <th aria-sort={sortDirection}>
+              <button
+                type="button"
+                className="sort-button"
+                disabled={isEditing}
+                onClick={toggleSort}
+              >
+                Id
+                <SortArrowIcon
+                  className={`sort-indicator ${sortDirection === 'descending' ? 'descending' : ''}`}
+                />
+              </button>
+            </th>
             <th>Name</th>
             <th>Date of birth</th>
             <th>Manager Id</th>

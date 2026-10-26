@@ -322,11 +322,30 @@ th {
   letter-spacing: 0.04em;
 }
 
-/* Marks the column the list is sorted by (always Id, ascending). */
-th .sort-indicator {
-  margin-left: 4px;
-  vertical-align: -1px;
+/* The sortable column header: a button that looks like the header text. */
+th .sort-button,
+th .sort-button:hover:not(:disabled) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+th .sort-button:hover:not(:disabled) {
   color: var(--text-h);
+}
+
+.sort-indicator {
+  color: var(--text-h);
+}
+
+.sort-indicator.descending {
+  transform: rotate(180deg);
 }
 
 td {

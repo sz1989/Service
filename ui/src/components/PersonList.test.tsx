@@ -31,13 +31,17 @@ function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 }
 
-// GET returns the list; the PUT response is chosen by each test.
+// GET returns the list; the PUT response is chosen by each test. A successful PUT updates the
+// list, so the reload that follows a save shows the change.
 function stubApi(putResponse: (body: Person) => Response = (body) => jsonResponse(body)) {
-  const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
-    Promise.resolve(
-      init?.method === 'PUT' ? putResponse(JSON.parse(init.body as string)) : jsonResponse([alex, sam]),
-    ),
-  )
+  let people = [alex, sam]
+  const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
+    if (init?.method !== 'PUT') return Promise.resolve(jsonResponse(people))
+    const body = JSON.parse(init.body as string) as Person
+    const response = putResponse(body)
+    if (response.ok) people = people.map((p) => (p.id === body.id ? body : p))
+    return Promise.resolve(response)
+  })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
@@ -119,7 +123,7 @@ describe('PersonList: row edit mode', () => {
     expect(within(screen.getByRole('row', { name: /Save/ })).getAllByRole('cell')[0]).toHaveTextContent('1')
   })
 
-  it('saves every changed field with one PUT, then shows the saved row without reloading', async () => {
+  it('saves every changed field with one PUT, then shows the saved row from the reloaded list', async () => {
     const user = userEvent.setup()
     const fetchMock = stubApi()
     await renderList()
@@ -148,7 +152,7 @@ describe('PersonList: row edit mode', () => {
       salary: 55000,
     })
     expect(init!.headers).toEqual({ 'Content-Type': 'application/json', Authorization: 'Bearer test-token' })
-    expect(fetchMock.mock.calls.length).toBe(requestsBefore + 1) // no list reload
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBe(requestsBefore + 2)) // the PUT, then the list reload
   })
 
   it('saves with Enter and sends an empty Manager Id as null', async () => {

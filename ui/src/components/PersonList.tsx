@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { NewPerson, Person } from '../api/types'
 import { ApiError } from '../api/ApiError'
 import { PERSON_URL } from '../api/config'
-import { useAuthedRequest } from '../hooks/useAuthedRequest'
 import { useApiMutation } from '../hooks/useApiMutation'
 import { useDelayedFlag } from '../hooks/useDelayedFlag'
-import { useUpdate } from '../hooks/useUpdate'
 import { RefreshIcon } from './ui/icons/RefreshIcon'
 import { PersonActions } from './PersonActions'
 import { PersonEditRow } from './PersonEditRow'
@@ -26,11 +24,10 @@ function updateErrorMessage(err: unknown): string {
 
 export function PersonList() {
   const pageSize = 4
-  const { authHeaders, handleUnauthorized } = useAuthedRequest()
   const [page, setPage] = useState(1)
-  const [personsState, setPersonsState] = useState<Person[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const { data: persons, error, isFetching, refetch } = usePeople()
+  const people = persons ?? []
   const { mutateAsync: addPerson } = useApiMutation<NewPerson>({
     method: 'POST',
     path: () => PERSON_URL,
@@ -39,29 +36,25 @@ export function PersonList() {
     method: 'DELETE',
     path: (id) => `${PERSON_URL}/${id}`,
   })
-  const { execute: updateExecute } = useUpdate<Person>()
+  const { mutateAsync: updatePersonMutation } = useApiMutation<Person>({
+    method: 'PUT',
+    path: () => PERSON_URL,
+  })
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const isEditing = editingId !== null
   const showSpinner = useDelayedFlag(isFetching, SPINNER_DELAY_MS)
 
-  const totalPages = Math.max(1, Math.ceil(personsState.length / pageSize))
+  const totalPages = Math.max(1, Math.ceil(people.length / pageSize))
   const currentPage = Math.min(page, totalPages)
-  const visiblePersons = personsState.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  )
+  const visiblePersons = people.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const selectedPerson = visiblePersons.find((p) => p.id === selectedId) ?? visiblePersons[0]
 
   const updatePerson = async (person: Person) => {
     try {
-      const saved = await updateExecute(PERSON_URL, person, {
-        headers: authHeaders,
-      })
-      // Patch just this row: reloading the list would send the user back to page 1.
-      setPersonsState((current) => current.map((p) => (p.id === saved.id ? saved : p)))
+      await updatePersonMutation(person)
     } catch (err) {
-      if (!handleUnauthorized(err)) {
+      if (!(err instanceof ApiError && err.status === 401)) {
         setUpdateError(updateErrorMessage(err))
       }
       throw err
@@ -80,102 +73,100 @@ export function PersonList() {
     }
   }
 
-  useEffect(() => {
-    setPage(1)
-    setPersonsState(persons ?? [])
-  }, [persons])
-
   if (error) {
     return <p className="error">{error instanceof ApiError ? error.message : 'Network error.'}</p>
   }
 
   return (
     <>
-    <table aria-busy={isFetching} className={showSpinner ? 'is-loading' : undefined}>
-      <thead>
-        <tr>
-          <th>Id</th>
-          <th>Name</th>
-          <th>Date of birth</th>
-          <th>Manager Id</th>
-          <th>Salary</th>
-          <th aria-label="Actions"></th>
-          <th aria-label="Actions"></th>
-        </tr>
-      </thead>
-      <tbody>
-        {visiblePersons.map((person) =>
-          person.id === editingId ? (
-            <PersonEditRow
-              key={person.id}
-              person={person}
-              onSave={savePerson}
-              onCancel={() => setEditingId(null)}
-            />
-          ) : (
-            <tr key={person.id}
-              className={person.id === selectedPerson?.id ? 'selected': undefined}
-              onClick={() => setSelectedId(person.id)}
-              onDoubleClick={() => startEditing(person.id)}>
-              <td>{person.id}</td>
-              <td>{person.name}</td>
-              <td>{person.dateOfBirth}</td>
-              <td>{person.managerId ?? '—'}</td>
-              <td>{person.salary}</td>
-              <td />
-            </tr>
-          ),
-        )}
-        {visiblePersons.length === 0 && (
+      <table aria-busy={isFetching} className={showSpinner ? 'is-loading' : undefined}>
+        <thead>
           <tr>
-            <td colSpan={6}>
-              {persons === undefined ? (
-                showSpinner && <Spinner label="Loading people…" />
-              ) : (
-                'No persons found.'
-              )}
-            </td>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Date of birth</th>
+            <th>Manager Id</th>
+            <th>Salary</th>
+            <th aria-label="Actions"></th>
+            <th aria-label="Actions"></th>
           </tr>
-        )}
-      </tbody>
-    </table>
-    <div className="list-toolbar">
-      <nav className="pagination" aria-label="People pages">
-        <button
-          type="button"
-          onClick={() => setPage((current) => Math.max(1, current - 1))}
-          disabled={currentPage === 1 || isEditing}
-        >
-          Previous
-        </button>
-        <span aria-live="polite">
-          Page {currentPage} of {totalPages}
-        </span>
-        {showSpinner && visiblePersons.length > 0 && <Spinner label="Loading people…" />}
-        <button
-          type="button"
-          onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-          disabled={currentPage === totalPages || isEditing}
-        >
-          Next
-        </button>
+        </thead>
+        <tbody>
+          {visiblePersons.map((person) =>
+            person.id === editingId ? (
+              <PersonEditRow
+                key={person.id}
+                person={person}
+                onSave={savePerson}
+                onCancel={() => setEditingId(null)}
+              />
+            ) : (
+              <tr
+                key={person.id}
+                className={person.id === selectedPerson?.id ? 'selected' : undefined}
+                onClick={() => setSelectedId(person.id)}
+                onDoubleClick={() => startEditing(person.id)}
+              >
+                <td>{person.id}</td>
+                <td>{person.name}</td>
+                <td>{person.dateOfBirth}</td>
+                <td>{person.managerId ?? '—'}</td>
+                <td>{person.salary}</td>
+                <td />
+              </tr>
+            ),
+          )}
+          {visiblePersons.length === 0 && (
+            <tr>
+              <td colSpan={6}>
+                {persons === undefined
+                  ? showSpinner && <Spinner label="Loading people…" />
+                  : 'No persons found.'}
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+      <div className="list-toolbar">
+        <nav className="pagination" aria-label="People pages">
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={currentPage === 1 || isEditing}
+          >
+            Previous
+          </button>
           <span aria-live="polite">
-            TOTAL: {personsState.length}
+            Page {currentPage} of {totalPages}
           </span>
-      </nav>
-      <PersonActions
-        onAdd={addPerson}
-        onDelete={deletePerson}
-        onEdit={() => selectedPerson && startEditing(selectedPerson.id)}
-        selectedPerson={selectedPerson}
-        isEditing={isEditing}
-      />
-      <button type="button" className="pagination refresh-button" disabled={isEditing || isFetching} onClick={() => refetch()}>
-        Refresh
-        <RefreshIcon className={isFetching ? 'spin' : undefined} />
-      </button>
-    </div>
-    {updateError && <ErrorDialog message={updateError} onClose={() => setUpdateError(null)} />}
+          {showSpinner && visiblePersons.length > 0 && <Spinner label="Loading people…" />}
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            disabled={currentPage === totalPages || isEditing}
+          >
+            Next
+          </button>
+          <span aria-live="polite">TOTAL: {people.length}</span>
+        </nav>
+        <PersonActions
+          onAdd={addPerson}
+          onDelete={deletePerson}
+          onEdit={() => selectedPerson && startEditing(selectedPerson.id)}
+          selectedPerson={selectedPerson}
+          isEditing={isEditing}
+        />
+        <button
+          type="button"
+          className="pagination refresh-button"
+          disabled={isEditing || isFetching}
+          onClick={() => refetch()}
+        >
+          Refresh
+          <RefreshIcon className={isFetching ? 'spin' : undefined} />
+        </button>
+      </div>
+      {updateError && <ErrorDialog message={updateError} onClose={() => setUpdateError(null)} />}
     </>
   )
 }

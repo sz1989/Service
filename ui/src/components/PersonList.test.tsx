@@ -323,6 +323,14 @@ describe('PersonList: order', () => {
     const idCells = screen.getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell')[0])
     expect(idCells.map((cell) => cell.textContent)).toEqual(['1', '2'])
   })
+
+  it('marks the Id column as the ascending sort', async () => {
+    stubApi()
+    await renderList()
+
+    expect(screen.getByRole('columnheader', { name: 'Id' })).toHaveAttribute('aria-sort', 'ascending')
+    expect(screen.getByRole('columnheader', { name: 'Name' })).not.toHaveAttribute('aria-sort')
+  })
 })
 
 describe('PersonList: busy indicator', () => {

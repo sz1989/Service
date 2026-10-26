@@ -5,6 +5,7 @@ import { PERSON_URL } from '../api/config'
 import { useApiMutation } from '../hooks/useApiMutation'
 import { useDelayedFlag } from '../hooks/useDelayedFlag'
 import { RefreshIcon } from './ui/icons/RefreshIcon'
+import { SortAscendingIcon } from './ui/icons/SortAscendingIcon'
 import { PersonActions } from './PersonActions'
 import { PersonEditRow } from './PersonEditRow'
 import { ErrorDialog } from './ui/ErrorDialog'
@@ -82,7 +83,10 @@ export function PersonList() {
       <table aria-busy={isFetching} className={showSpinner ? 'is-loading' : undefined}>
         <thead>
           <tr>
-            <th>Id</th>
+            <th aria-sort="ascending">
+            Id
+            <SortAscendingIcon className="sort-indicator" />
+          </th>
             <th>Name</th>
             <th>Date of birth</th>
             <th>Manager Id</th>

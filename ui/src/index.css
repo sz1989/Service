@@ -322,6 +322,13 @@ th {
   letter-spacing: 0.04em;
 }
 
+/* Marks the column the list is sorted by (always Id, ascending). */
+th .sort-indicator {
+  margin-left: 4px;
+  vertical-align: -1px;
+  color: var(--text-h);
+}
+
 td {
   text-align: left;
   padding: 10px 12px;

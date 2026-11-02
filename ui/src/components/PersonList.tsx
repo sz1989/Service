@@ -16,6 +16,7 @@ import { usePeople } from '../hooks/usePeople'
 const SPINNER_DELAY_MS = 300
 
 type SortDirection = 'ascending' | 'descending'
+type SortKey = 'id' | 'dateOfBirth'
 
 function updateErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
@@ -30,11 +31,16 @@ export function PersonList() {
   const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const { data: persons, error, isFetching, refetch } = usePeople()
+  const [sortKey, setSortKey] = useState<SortKey>('id')
   const [sortDirection, setSortDirection] = useState<SortDirection>('ascending')
   const people = useMemo(() => {
     const direction = sortDirection === 'ascending' ? 1 : -1
-    return [...(persons ?? [])].sort((a, b) => direction * (a.id - b.id))
-  }, [persons, sortDirection])
+    const compare = (a: Person, b: Person) =>
+      sortKey === 'dateOfBirth'
+        ? Date.parse(a.dateOfBirth) - Date.parse(b.dateOfBirth)
+        : a.id - b.id
+    return [...(persons ?? [])].sort((a, b) => direction * compare(a, b))
+  }, [persons, sortKey, sortDirection])
   const { mutateAsync: addPerson } = useApiMutation<NewPerson>({
     method: 'POST',
     path: () => PERSON_URL,
@@ -73,8 +79,13 @@ export function PersonList() {
     setEditingId(null)
   }
 
-  const toggleSort = () => {
-    setSortDirection((current) => (current === 'ascending' ? 'descending' : 'ascending'))
+  const toggleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDirection((current) => (current === 'ascending' ? 'descending' : 'ascending'))
+    } else {
+      setSortKey(key)
+      setSortDirection('ascending')
+    }
     setPage(1)
   }
 
@@ -99,7 +110,7 @@ export function PersonList() {
                 type="button"
                 className="sort-button"
                 disabled={isEditing}
-                onClick={toggleSort}
+                onClick={() => toggleSort('id')}
               >
                 Id
                 <SortArrowIcon
@@ -108,7 +119,21 @@ export function PersonList() {
               </button>
             </th>
             <th>Name</th>
-            <th>Date of birth</th>
+            <th aria-sort={sortKey === 'dateOfBirth' ? sortDirection : undefined}>
+              <button
+                type="button"
+                className="sort-button"
+                disabled={isEditing}
+                onClick={() => toggleSort('dateOfBirth')}
+              >
+                Date of birth
+                <SortArrowIcon
+                  className={`sort-indicator ${
+                    sortKey === 'dateOfBirth' && sortDirection === 'descending' ? 'descending' : ''
+                  }`}
+                />
+              </button>
+            </th>
             <th>Manager Id</th>
             <th>Salary</th>
             <th aria-label="Actions"></th>

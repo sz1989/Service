@@ -43,7 +43,7 @@ public class PersonServiceTests
 
         var service = CreateService();
 
-        var result = await service.UpdatePersonAsync(updated);
+        var result = await service.UpdatePersonAsync(updated, TestContext.Current.CancellationToken);
 
         // The service updates the tracked entity (avoids an EF duplicate-key tracking conflict)
         // by copying values onto it, so it returns `existing`, not the incoming object.
@@ -63,7 +63,7 @@ public class PersonServiceTests
 
         var service = CreateService();
 
-        var result = await service.UpdatePersonAsync(updated);
+        var result = await service.UpdatePersonAsync(updated, TestContext.Current.CancellationToken);
 
         result.Should().BeNull();
         _personRepo.Verify(r => r.Update(It.IsAny<Person>()), Times.Never);

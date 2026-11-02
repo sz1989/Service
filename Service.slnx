@@ -1,7 +1,9 @@
 <Solution>
+  <Project Path="src/CLI/CLI.csproj" />
   <Project Path="src/Gateway/Gateway.csproj" />
   <Project Path="src/Model/Model.csproj" />
   <Project Path="src/Service/Service.csproj" />
+  <Project Path="tests/CLI.Tests/CLI.Tests.csproj" />
   <Project Path="tests/Gateway.Tests/Gateway.Tests.csproj" />
   <Project Path="tests/Service.Tests/Service.Tests.csproj" />
 </Solution>

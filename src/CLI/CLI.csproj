@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Description>Command-line tool built on System.CommandLine</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CLI.Tests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />  <!-- lets NSubstitute mock internal interfaces -->
+
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,116 @@
+# AGENTS.md
+
+Project structure reference for this repo. See `README.md` for setup/run instructions and `doc/ServiceRef.md` / `doc/UIRef.md` / `doc/AiRef.md` for endpoint and feature docs.
+
+## Commands
+
+### Setup (one-time)
+
+```bash
+cp .env.example .env                           # then edit values as needed
+cd src/Service && ./generate-cert.sh && cd -   # backend dev HTTPS cert -> src/Service/certs
+cd ui && ./generate-cert.sh && cd -            # UI dev HTTPS cert -> ui/certs
+cd ui && npm install && cd -
+``` 
+
+### Run
+
+```bash
+./start.sh                 # docker deps (db/redis/seq) + API + UI dev server
+./start.sh --ollama        # same, plus local Ollama (needed for chat/RAG endpoints)
+
+# or individually:
+docker compose up -d --build        # everything in Docker
+docker compose up -d db redis seq   # just infra, then run API locally:
+dotnet run --project src/Service    # -> https://localhost:7071
+dotnet run --project src/Gateway    # -> https://localhost:7081 (proxies to Service)
+cd ui && npm run dev                # -> https://localhost:3000 (UI only)
+```
+
+Mint a dev JWT for manual API calls:
+
+```bash
+./src/Service/generate-jwt.sh          # role: user
+./src/Service/generate-jwt.sh admin    # role: admin
+curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh admin)" https://localhost/Person/1
+```
+
+### Build / Test / Lint
+
+```bash
+# Backend
+dotnet build ./Service.slnx --configuration Release
+dotnet test ./Service.slnx --collect:"XPlat Code Coverage"
+
+# UI (run from ui/)
+npm run build       # tsc -b && vite build
+npm test            # vitest run (single run, what CI uses)
+npm run test:watch  # vitest watch mode
+npm run lint        # oxlint
+```
+
+CI mirrors these: `.github/workflows/dotnet-build.yml` (restore/build/test + coverage report, triggered on non-`ui/` changes) and `.github/workflows/react-build.yml` (`npm ci`, `npm test`, `npm run build`, triggered on `ui/` changes).
+
+## Conventions
+
+- **Nullable + implicit usings enabled** repo-wide (`Directory.Build.props`, target `net10.0`). Central NuGet package versions live in `Directory.Packages.props` — add new packages there, not per-`.csproj` versions.
+- **Service conventions** (BAL feature folders, primary constructors, DI registration, layering, API versioning): see [`src/Service/AGENTS.md`](src/Service/AGENTS.md). **Gateway conventions**: see [`src/Gateway/AGENTS.md`](src/Gateway/AGENTS.md).
+- **UI tests** live next to the component as `*.test.tsx` (e.g. `PersonActions.test.tsx`), using Vitest + React Testing Library; new components should follow the same colocation pattern.
+- Keep `doc/ServiceRef.md` / `doc/UIRef.md` / `doc/AiRef.md` in sync when adding endpoints or UI routes — they're the canonical reference, this file is just structure/commands/conventions.
+
+## Overview
+
+ASP.NET Core 10 Web API (person records, JWT auth, Redis, Postgres/EF Core, LLM chat + RAG via Ollama, ML.NET prediction, MCP server) with a separate React + TypeScript UI. Solution is defined in `Service.slnx`.
+
+## Top-level layout
+
+```
+.
+├── Service.slnx              # solution file (Gateway, Model, Service, Gateway.Tests, Service.Tests)
+├── Directory.Build.props     # shared MSBuild settings
+├── Directory.Packages.props  # central NuGet package version management
+├── docker-compose.yml        # API + Postgres + Redis + pgAdmin + Seq
+├── dockerfile                # Service container build
+├── start.sh                  # helper launch script
+├── db/                       # init/seed/query SQL (Postgres + pgvector)
+├── doc/                      # ServiceRef.md, UIRef.md, AiRef.md reference docs
+├── src/
+│   ├── Gateway/              # Gateway.csproj — YARP reverse proxy / API gateway in front of Service
+│   ├── Model/                # Model.csproj — shared POCOs (Person, Train)
+│   └── Service/               # Service.csproj — the API project
+├── tests/
+│   ├── Gateway.Tests/        # xUnit tests for src/Gateway
+│   └── Service.Tests/        # xUnit tests for src/Service
+└── ui/                        # React + TypeScript + Vite frontend
+```
+
+## `src/Service` (API project)
+
+Layout, layering and conventions (BAL feature folders, DI registration, API versioning): see [`src/Service/AGENTS.md`](src/Service/AGENTS.md).
+
+## `src/Gateway` (API gateway)
+
+YARP reverse proxy in front of Service (JWT validation, CORS, rate limiting at the edge). Layout, behavior and conventions: see [`src/Gateway/AGENTS.md`](src/Gateway/AGENTS.md).
+
+## `ui/` (React frontend)
+
+```
+ui/
+├── index.html, vite.config.ts, tsconfig*.json
+├── certs/                     # dev HTTPS cert (git-ignored contents)
+├── public/                    # favicon.svg, icons.svg
+└── src/
+    ├── main.tsx, App.tsx, index.css
+    ├── api/                   # config.ts, types.ts
+    ├── auth/                  # AuthContext.tsx
+    ├── components/            # ChatPanel, IngestPanel, PersonList, PersonActions,
+    │                          #   ProtectedRoute, RagSearchPanel, ErrorBoundary (+ *.test.tsx)
+    ├── hooks/                 # useChatHub.ts, useFetch.ts
+    ├── pages/                 # DashboardPage.tsx, LoginPage.tsx
+    └── test/                  # setup.ts (Vitest)
+```
+
+## Other notes
+
+- Root `package.json` only pulls in `@modelcontextprotocol/inspector`; it is unrelated to `ui/package.json`.
+- CI: `.github/workflows/dotnet-build.yml` and `react-build.yml`.

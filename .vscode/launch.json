@@ -21,11 +21,27 @@
             }
         },
         {
-            "name": "React: Chrome",
-            "type": "pwa-chrome",
+            "name": ".NET Launch (gateway)",
+            "type": "coreclr",
             "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/Gateway/bin/Debug/net10.0/Gateway.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Gateway",
+            "stopAtEntry": false,
+            "console": "integratedTerminal",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:7081"
+            }
+        },
+        {
+            "name": "React: Chrome",
+            "type": "chrome",
+            "request": "launch",
+            "preLaunchTask": "ui: dev server",
             "url": "https://localhost:3000",
-            "webRoot": "${workspaceFolder}/ui/src",
+            "webRoot": "${workspaceFolder}/ui",
             "sourceMaps": true
         },
         {
@@ -40,8 +56,10 @@
             "name": "React + .NET",
             "configurations": [
                 "React: Chrome",
-                ".NET Launch (web)"
-            ]
+                ".NET Launch (web)",
+                ".NET Launch (gateway)"
+            ],
+            "stopAll": true
         }
     ]
 }

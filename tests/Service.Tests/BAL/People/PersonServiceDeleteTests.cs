@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -34,7 +35,7 @@ public class PersonServiceDeleteTests
 
         var service = CreateService();
 
-        var result = await service.DeletePersonAsync(existing.Id);
+        var result = await service.DeletePersonAsync(existing.Id, TestContext.Current.CancellationToken);
 
         result.Should().BeTrue();
         _personRepo.Received(1).Delete(existing);
@@ -50,7 +51,7 @@ public class PersonServiceDeleteTests
 
         var service = CreateService();
 
-        var result = await service.DeletePersonAsync(id);
+        var result = await service.DeletePersonAsync(id, TestContext.Current.CancellationToken);
 
         result.Should().BeFalse();
         _personRepo.DidNotReceive().Delete(Arg.Any<Person>());

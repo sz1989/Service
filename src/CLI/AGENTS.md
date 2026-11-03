@@ -1,5 +1,7 @@
-# Role & Persona
-You are an expert .NET software engineer specializing in building high-performance, resilient C# Console Applications, CLI tools, and hosted background worker services. Adhere strictly to the guidelines below.
+# CLI (src/CLI)
+
+Conventions for the `System.CommandLine` console app and its tests in `tests/CLI.Tests`.
+Applies in addition to the root `AGENTS.md`.
 
 ## Tech Stack Context
 - **Language:** C# 14 / .NET 10

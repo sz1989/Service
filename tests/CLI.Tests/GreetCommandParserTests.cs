@@ -1,25 +1,21 @@
 using System.CommandLine;
 using CLI.Commands;
 using CLI.Services;
-using FluentAssertions;
 using NSubstitute;
 
 namespace CLI.Tests;
 
 public class GreetCommandParserTests
 {
-    private static RootCommand CreateRoot()
-    {
-        var services = new ServiceCollectionStub(Substitute.For<IGreetingService>());
-        return RootCommandFactory.Create(services);
-    }
+    private static RootCommand CreateRoot() =>
+        RootCommandFactory.Create(new ServiceCollectionStub(Substitute.For<IGreetingService>()));
 
     [Fact]
     public void Parse_WithValidName_HasNoErrors()
     {
         var result = CreateRoot().Parse(["greet", "--name", "Ada"]);
 
-        result.Errors.Should().BeEmpty();
+        Assert.Empty(result.Errors);
     }
 
     [Fact]
@@ -27,15 +23,19 @@ public class GreetCommandParserTests
     {
         var result = CreateRoot().Parse(["greet"]);
 
-        result.Errors.Should().ContainSingle().Which.Message.Should().Contain("--name");
+        var error = Assert.Single(result.Errors);
+        Assert.Contains("--name", error.Message);
     }
 
-    [Fact]
-    public void Parse_WithBlankName_ReportsError()
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void Parse_WithBlankName_ReportsError(string name)
     {
-        var result = CreateRoot().Parse(["greet", "--name", " "]);
+        var result = CreateRoot().Parse(["greet", "--name", name]);
 
-        result.Errors.Should().ContainSingle().Which.Message.Should().Contain("must not be blank");
+        var error = Assert.Single(result.Errors);
+        Assert.Contains("must not be blank", error.Message);
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public class GreetCommandParserTests
     {
         var result = CreateRoot().Parse(["greet", "--name", "Ada", "--bogus"]);
 
-        result.Errors.Should().NotBeEmpty();
+        Assert.NotEmpty(result.Errors);
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public class GreetCommandParserTests
 
         var result = CreateRoot().Parse(["greet", "--name", "Ada", "--output-dir", missing]);
 
-        result.Errors.Should().NotBeEmpty();
+        Assert.NotEmpty(result.Errors);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class GreetCommandParserTests
     {
         var result = CreateRoot().Parse(["greet", "--name", "Ada", "--output-dir", Path.GetTempPath()]);
 
-        result.Errors.Should().BeEmpty();
+        Assert.Empty(result.Errors);
     }
 
     [Fact]
@@ -72,7 +72,8 @@ public class GreetCommandParserTests
         var exitCode = await CreateRoot().Parse(["greet", "--help"])
             .InvokeAsync(new InvocationConfiguration { Output = output }, TestContext.Current.CancellationToken);
 
-        exitCode.Should().Be(0);
-        output.ToString().Should().Contain("--name").And.Contain("--output-dir");
+        Assert.Equal(0, exitCode);
+        Assert.Contains("--name", output.ToString());
+        Assert.Contains("--output-dir", output.ToString());
     }
 }

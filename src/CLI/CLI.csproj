@@ -3,17 +3,22 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Description>Command-line tool built on System.CommandLine</Description>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Formatting.Compact" />
+    <PackageReference Include="Serilog.Sinks.Console" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="CLI.Tests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />  <!-- lets NSubstitute mock internal interfaces -->
-
   </ItemGroup>
 
 </Project>

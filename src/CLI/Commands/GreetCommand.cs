@@ -27,7 +27,7 @@ internal sealed class GreetCommand : Command
                 result.AddError("--name must not be blank.");
             }
         });
-        _outputDir.AcceptExistingOnly();
+        _ = _outputDir.AcceptExistingOnly();
 
         Options.Add(_name);
         Options.Add(_outputDir);

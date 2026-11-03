@@ -1,7 +1,7 @@
 using System.CommandLine;
 using CLI.Commands;
 using CLI.Services;
-using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
 namespace CLI.Tests;
@@ -15,31 +15,46 @@ public class GreetCommandHandlerTests
     private Task<int> RunAsync(params string[] args)
     {
         var root = RootCommandFactory.Create(new ServiceCollectionStub(_greetingService));
-        return root.Parse(args).InvokeAsync(new InvocationConfiguration { Output = _output, Error = _error });
+        return root.Parse(args).InvokeAsync(
+            new InvocationConfiguration { Output = _output, Error = _error },
+            TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task Greet_PrintsGreeting_AndReturnsZero()
     {
-        _greetingService.GreetAsync("Ada", Arg.Any<CancellationToken>()).Returns("Hello, Ada!");
+        _ = _greetingService.GreetAsync("Ada", Arg.Any<CancellationToken>()).Returns("Hello, Ada!");
 
         var exitCode = await RunAsync("greet", "--name", "Ada");
 
-        exitCode.Should().Be(0);
-        _output.ToString().Should().Contain("Hello, Ada!");
-        _error.ToString().Should().BeEmpty();
+        Assert.Equal(0, exitCode);
+        Assert.Contains("Hello, Ada!", _output.ToString());
+        Assert.Empty(_error.ToString());
     }
 
     [Fact]
     public async Task Greet_WhenServiceThrows_ReturnsNonZero_WithFriendlyMessage()
     {
-        _greetingService.GreetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _ = _greetingService.GreetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns<string>(_ => throw new GreetingException("boom"));
 
         var exitCode = await RunAsync("greet", "--name", "Ada");
 
-        exitCode.Should().NotBe(0);
-        _error.ToString().Should().Contain("boom").And.NotContain("   at ");
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains("boom", _error.ToString());
+        Assert.DoesNotContain("   at ", _error.ToString());
+    }
+
+    [Fact]
+    public async Task Greet_WhenCancelled_Returns130()
+    {
+        _greetingService.GreetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns<string>(_ => throw new OperationCanceledException());
+
+        var exitCode = await RunAsync("greet", "--name", "Ada");
+
+        Assert.Equal(130, exitCode);
+        Assert.Contains("Cancelled.", _error.ToString());
     }
 
     [Fact]
@@ -48,12 +63,14 @@ public class GreetCommandHandlerTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            _greetingService.GreetAsync("Ada", Arg.Any<CancellationToken>()).Returns("Hello, Ada!");
+            _ = _greetingService.GreetAsync("Ada", Arg.Any<CancellationToken>()).Returns("Hello, Ada!");
 
             var exitCode = await RunAsync("greet", "--name", "Ada", "--output-dir", directory.FullName);
 
-            exitCode.Should().Be(0);
-            File.ReadAllText(Path.Combine(directory.FullName, "greeting.txt")).Should().Contain("Hello, Ada!");
+            Assert.Equal(0, exitCode);
+            var written = await File.ReadAllTextAsync(
+                Path.Combine(directory.FullName, "greeting.txt"), TestContext.Current.CancellationToken);
+            Assert.Contains("Hello, Ada!", written);
         }
         finally
         {
@@ -64,19 +81,33 @@ public class GreetCommandHandlerTests
 
 public class GreetingServiceTests
 {
-    [Fact]
-    public async Task GreetAsync_TrimsName()
-    {
-        var greeting = await new GreetingService().GreetAsync("  Ada ", CancellationToken.None);
+    private static GreetingService CreateService() => new(NullLogger<GreetingService>.Instance);
 
-        greeting.Should().Be("Hello, Ada!");
+    [Theory]
+    [InlineData("  Ada ", "Hello, Ada!")]
+    [InlineData("Ada", "Hello, Ada!")]
+    public async Task GreetAsync_TrimsName(string name, string expected)
+    {
+        var greeting = await CreateService().GreetAsync(name, TestContext.Current.CancellationToken);
+
+        Assert.Equal(expected, greeting);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public async Task GreetAsync_WithBlankName_Throws(string name)
+    {
+        await Assert.ThrowsAsync<GreetingException>(
+            () => CreateService().GreetAsync(name, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public async Task GreetAsync_WithBlankName_Throws()
+    public async Task GreetAsync_WhenAlreadyCancelled_Throws()
     {
-        var act = () => new GreetingService().GreetAsync(" ", CancellationToken.None);
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
 
-        await act.Should().ThrowAsync<GreetingException>();
+        await Assert.ThrowsAsync<OperationCanceledException>(() => CreateService().GreetAsync("Ada", cts.Token));
     }
 }

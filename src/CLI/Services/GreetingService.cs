@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Logging;
+
 namespace CLI.Services;
 
-internal sealed class GreetingService : IGreetingService
+internal sealed class GreetingService(ILogger<GreetingService> logger) : IGreetingService
 {
     public Task<string> GreetAsync(string name, CancellationToken cancellationToken)
     {
@@ -11,6 +13,9 @@ internal sealed class GreetingService : IGreetingService
             throw new GreetingException("A name is required to greet someone.");
         }
 
-        return Task.FromResult($"Hello, {name.Trim()}!");
+        var trimmed = name.Trim();
+        logger.LogInformation("Greeting {Name}", trimmed);
+
+        return Task.FromResult($"Hello, {trimmed}!");
     }
 }

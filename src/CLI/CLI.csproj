@@ -2,8 +2,10 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <Description>Command-line tool built on System.CommandLine</Description>
+    <Description>CLI</Description>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Version>0.1.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion> <!-- drop the git hash as a revision number -->
   </PropertyGroup>
 
   <ItemGroup>

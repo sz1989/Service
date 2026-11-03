@@ -1,0 +1,59 @@
+name: CLI Release
+
+on:
+  workflow_dispatch:           # manual run from the Actions tab
+  push:
+    tags: [ "cli-v*" ]         # or push a tag like cli-v0.1
+
+permissions:
+  contents: write              # needed to create the GitHub Release
+
+jobs:
+  release:
+    name: Publish CLI (${{ matrix.rid }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rid: [ win-x64, linux-x64, osx-arm64 ]
+
+    env:
+      # Major.Minor from the csproj + a number that increases on every run, e.g. 0.1.0.57
+      VERSION: 0.1.0.${{ github.run_number }}
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Test
+      run: dotnet test ./tests/CLI.Tests/CLI.Tests.csproj --configuration Release
+
+    - name: Publish single-file binary
+      run: >
+        dotnet publish ./src/CLI/CLI.csproj
+        --configuration Release --runtime ${{ matrix.rid }} --self-contained true
+        -p:PublishSingleFile=true
+        -p:Version=${{ env.VERSION }}
+        -p:IncludeSourceRevisionInInformationalVersion=false
+        --output ./publish/${{ matrix.rid }}
+
+    - name: Zip
+      run: |
+        cd publish/${{ matrix.rid }}
+        zip -r ../../cli-${{ env.VERSION }}-${{ matrix.rid }}.zip .
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: cli-${{ matrix.rid }}
+        path: cli-${{ env.VERSION }}-${{ matrix.rid }}.zip
+
+    - name: Attach to GitHub Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: cli-${{ env.VERSION }}-${{ matrix.rid }}.zip

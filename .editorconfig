@@ -116,6 +116,9 @@ dotnet_diagnostic.CA1062.severity = none
 dotnet_diagnostic.CS1591.severity = suggestion
 dotnet_diagnostic.IDE0005.severity = warning
 dotnet_diagnostic.CA2007.severity = none
+# AGENTS.md prescribes plain message-template logging, not LoggerMessage delegates
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none
 
 dotnet_analyzer_diagnostic.category-Style.severity = warning
 

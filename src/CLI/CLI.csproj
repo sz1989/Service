@@ -4,6 +4,9 @@
     <OutputType>Exe</OutputType>
     <Description>CLI</Description>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile> <!-- required for IDE0005 on build -->
+    <AnalysisMode>Recommended</AnalysisMode>
     <Version>0.1.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion> <!-- drop the git hash as a revision number -->
   </PropertyGroup>

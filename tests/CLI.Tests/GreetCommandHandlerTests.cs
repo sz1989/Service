@@ -6,11 +6,17 @@ using NSubstitute;
 
 namespace CLI.Tests;
 
-public class GreetCommandHandlerTests
+public sealed class GreetCommandHandlerTests : IDisposable
 {
     private readonly IGreetingService _greetingService = Substitute.For<IGreetingService>();
     private readonly StringWriter _output = new();
     private readonly StringWriter _error = new();
+
+    public void Dispose()
+    {
+        _output.Dispose();
+        _error.Dispose();
+    }
 
     private Task<int> RunAsync(params string[] args)
     {

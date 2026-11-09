@@ -55,6 +55,7 @@ CI mirrors these: `.github/workflows/dotnet-build.yml` (restore/build/test + cov
 
 - **Nullable + implicit usings enabled** repo-wide (`Directory.Build.props`, target `net10.0`). Central NuGet package versions live in `Directory.Packages.props` — add new packages there, not per-`.csproj` versions.
 - **Service conventions** (BAL feature folders, primary constructors, DI registration, layering, API versioning): see [`src/Service/AGENTS.md`](src/Service/AGENTS.md). **Gateway conventions**: see [`src/Gateway/AGENTS.md`](src/Gateway/AGENTS.md).
+- **CancellationToken naming (all C# projects):** name `CancellationToken` parameters and locals `ct` (e.g. `ListAsync(int limit, CancellationToken ct)`), not `cancellationToken`.
 - **UI tests** live next to the component as `*.test.tsx` (e.g. `PersonActions.test.tsx`), using Vitest + React Testing Library; new components should follow the same colocation pattern.
 - Keep `doc/ServiceRef.md` / `doc/UIRef.md` / `doc/AiRef.md` in sync when adding endpoints or UI routes — they're the canonical reference, this file is just structure/commands/conventions.
 

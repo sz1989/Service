@@ -119,6 +119,8 @@ dotnet_diagnostic.CA2007.severity = none
 # AGENTS.md prescribes plain message-template logging, not LoggerMessage delegates
 dotnet_diagnostic.CA1848.severity = none
 dotnet_diagnostic.CA1873.severity = none
+# Fluent/builder calls (DI registration, NSubstitute .Returns(...)) intentionally ignore their return value
+dotnet_diagnostic.IDE0058.severity = none
 
 dotnet_analyzer_diagnostic.category-Style.severity = warning
 
@@ -127,5 +129,3 @@ dotnet_analyzer_diagnostic.category-Style.severity = warning
 # ---------------------------------------------------------------
 [**/*Tests/**.cs]
 dotnet_diagnostic.CA1707.severity = none
-# NSubstitute .Returns(...) results are intentionally unused
-dotnet_diagnostic.IDE0058.severity = none

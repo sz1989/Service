@@ -4,9 +4,9 @@ namespace CLI.Services;
 
 internal sealed class GreetingService(ILogger<GreetingService> logger) : IGreetingService
 {
-    public Task<string> GreetAsync(string name, CancellationToken cancellationToken)
+    public Task<string> GreetAsync(string name, CancellationToken ct)
     {
-        cancellationToken.ThrowIfCancellationRequested();
+        ct.ThrowIfCancellationRequested();
 
         if (string.IsNullOrWhiteSpace(name))
         {

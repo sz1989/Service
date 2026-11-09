@@ -10,6 +10,7 @@ internal static class RootCommandFactory
     {
         var root = new RootCommand("Command-line tool for the Service solution.");
         root.Subcommands.Add(new GreetCommand(services.GetRequiredService<IGreetingService>()));
+        root.Subcommands.Add(new PeopleCommand(services.GetRequiredService<IPeopleService>));
         return root;
     }
 }

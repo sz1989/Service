@@ -32,23 +32,23 @@ internal sealed class GreetCommand : Command
         Options.Add(_name);
         Options.Add(_outputDir);
 
-        SetAction((parseResult, cancellationToken) => RunAsync(greetingService, parseResult, cancellationToken));
+        SetAction((parseResult, ct) => RunAsync(greetingService, parseResult, ct));
     }
 
-    private async Task<int> RunAsync(IGreetingService greetingService, ParseResult parseResult, CancellationToken cancellationToken)
+    private async Task<int> RunAsync(IGreetingService greetingService, ParseResult parseResult, CancellationToken ct)
     {
         var output = parseResult.InvocationConfiguration.Output;
         var error = parseResult.InvocationConfiguration.Error;
 
         try
         {
-            var greeting = await greetingService.GreetAsync(parseResult.GetRequiredValue(_name), cancellationToken);
+            var greeting = await greetingService.GreetAsync(parseResult.GetRequiredValue(_name), ct);
             await output.WriteLineAsync(greeting);
 
             if (parseResult.GetValue(_outputDir) is { } directory)
             {
                 var path = Path.Combine(directory.FullName, "greeting.txt");
-                await File.WriteAllTextAsync(path, greeting + Environment.NewLine, cancellationToken);
+                await File.WriteAllTextAsync(path, greeting + Environment.NewLine, ct);
                 await output.WriteLineAsync($"Wrote {path}");
             }
 

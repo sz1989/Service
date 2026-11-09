@@ -2,8 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <Description>Command-line tool built on System.CommandLine</Description>
+    <Description>CLI</Description>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile> <!-- required for IDE0005 on build -->
+    <AnalysisMode>Recommended</AnalysisMode>
+    <Version>0.1.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion> <!-- drop the git hash as a revision number -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +19,11 @@
     <PackageReference Include="Serilog.Extensions.Hosting" />
     <PackageReference Include="Serilog.Formatting.Compact" />
     <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

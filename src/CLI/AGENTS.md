@@ -14,7 +14,7 @@ Applies in addition to the root `AGENTS.md`.
 
 ## Architecture & Dependency Injection
 1. **Host Orchestration:** Build application lifecycles natively using `Host.CreateDefaultBuilder` or `Host.CreateApplicationBuilder`. Manage configurations, logging, and services inside the host infrastructure.
-2. **Command Registration:** Decouple CLI parsing from core actions. Commands must be defined via `System.CommandLine` (`Command`, `Option`, `Argument`) and actions (`command.SetAction(async (parseResult, cancellationToken) => ...)`) must use dependency injection through an injected service layer. System.CommandLine 2.0 has no `BindingContext`; the command factory receives the host's `IServiceProvider` and passes services into the command constructors.
+2. **Command Registration:** Decouple CLI parsing from core actions. Commands must be defined via `System.CommandLine` (`Command`, `Option`, `Argument`) and actions (`command.SetAction(async (parseResult, ct) => ...)`) must use dependency injection through an injected service layer. System.CommandLine 2.0 has no `BindingContext`; the command factory receives the host's `IServiceProvider` and passes services into the command constructors.
 3. **Optional Single-File Compatibility:** To support optional Single-File compilation (`-p:PublishSingleFile=true`), do not rely on dynamic path discovery techniques like `Assembly.GetExecutingAssembly().Location`. Use `AppContext.BaseDirectory` instead. Avoid heavy runtime reflection or dynamic code generation that fails single-file packaging.
 
 ---

@@ -33,13 +33,18 @@ List people from the database.
 ```bash
 dotnet run --project src/CLI -- people
 dotnet run --project src/CLI -- people --limit 5
+dotnet run --project src/CLI -- people --csv ./people.csv
+dotnet run --project src/CLI -- people --csv        # writes people.csv next to the executable
 ```
 
-| Option            | Alias | Required | Default | Description                                  |
-|-------------------|-------|----------|---------|----------------------------------------------|
-| `--limit <n>`     | `-l`  | No       | `20`    | Maximum number of people to list. Minimum 1. |
+| Option            | Alias | Required | Default | Description                                                                              |
+|-------------------|-------|----------|---------|------------------------------------------------------------------------------------------|
+| `--limit <n>`     | `-l`  | No       | `20`    | Maximum number of people to list. Minimum 1.                                             |
+| `--csv <file>`    | `-c`  | No       | —       | Write the list to this CSV file (overwritten if it exists) instead of printing it. The parent directory must exist. Pass `--csv` with no file to write `people.csv` in the executable's folder. |
 
-Output is tab-separated: `Id`, `Name`, `DateOfBirth` (`yyyy-MM-dd`), `Salary` (two decimals). Prints `No people found.` when the result is empty.
+Output is tab-separated: `Id`, `Name`, `DateOfBirth` (`yyyy-MM-dd`), `Salary` (two decimals).
+
+With `--csv`, the file has the header `Id,Name,Date of birth,Annual salary` (from the `[Description]` attributes on `PersonSummary`, falling back to the property name) followed by one row per person (`DateOfBirth` as `MM/dd/yyyy`, UTF-8, CRLF line endings, invariant formatting, fields quoted per RFC 4180). An empty result writes the header only.
 
 Exit codes: `0` success, `1` service or configuration error, `130` cancelled.
 

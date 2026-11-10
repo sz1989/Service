@@ -1,8 +1,3 @@
-using System.CommandLine;
-using CLI.Commands;
-using CLI.Services;
-using NSubstitute;
-
 namespace CLI.Tests;
 
 public sealed class PeopleCommandHandlerTests : IDisposable
@@ -50,17 +45,6 @@ public sealed class PeopleCommandHandlerTests : IDisposable
     }
 
     [Fact]
-    public async Task People_WhenEmpty_PrintsNoPeopleFound()
-    {
-        _ = _peopleService.ListAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns([]);
-
-        var exitCode = await RunAsync("people");
-
-        Assert.Equal(0, exitCode);
-        Assert.Contains("No people found.", _output.ToString());
-    }
-
-    [Fact]
     public async Task People_WhenServiceThrows_ReturnsNonZero_WithFriendlyMessage()
     {
         _ = _peopleService.ListAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
@@ -96,5 +80,67 @@ public sealed class PeopleCommandHandlerTests : IDisposable
 
         var error = Assert.Single(result.Errors);
         Assert.Contains("--limit must be at least 1", error.Message);
+    }
+
+    [Fact]
+    public async Task People_WithCsv_WritesFile_AndDoesNotPrintRows()
+    {
+        PersonSummary[] people =
+        [
+            new(1, "Ada", new DateOnly(1990, 1, 2), 1234.5m),
+            new(2, "Lovelace, \"Ada\"", new DateOnly(1985, 12, 31), 10m)
+        ];
+        _ = _peopleService.ListAsync(20, Arg.Any<CancellationToken>()).Returns(people);
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.csv");
+
+        try
+        {
+            var exitCode = await RunAsync("people", "--csv", path);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal(
+                "Id,Name,Date of birth,Annual salary\r\n1,Ada,01/02/1990,1234.50\r\n2,\"Lovelace, \"\"Ada\"\"\",12/31/1985,10.00\r\n",
+                await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+            Assert.Empty(_output.ToString());
+            Assert.DoesNotContain("Ada\t", _output.ToString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void People_WithCsvInMissingDirectory_ReportsError()
+    {
+        var root = RootCommandFactory.Create(new ServiceCollectionStub(peopleService: _peopleService));
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "people.csv");
+
+        var result = root.Parse(["people", "--csv", path]);
+
+        var error = Assert.Single(result.Errors);
+        Assert.Contains("does not exist", error.Message);
+    }
+
+    [Fact]
+    public async Task People_WithCsvAndNoFile_WritesDefaultFileInExecutableFolder()
+    {
+        PersonSummary[] people = [new(1, "Ada", new DateOnly(1990, 1, 2), 1234.5m)];
+        _ = _peopleService.ListAsync(20, Arg.Any<CancellationToken>()).Returns(people);
+        var path = Path.Combine(AppContext.BaseDirectory, "people.csv");
+
+        try
+        {
+            var exitCode = await RunAsync("people", "--csv");
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal(
+                "Id,Name,Date of birth,Annual salary\r\n1,Ada,01/02/1990,1234.50\r\n",
+                await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }

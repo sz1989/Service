@@ -1,8 +1,3 @@
-using System.CommandLine;
-using CLI.Commands;
-using CLI.Services;
-using NSubstitute;
-
 namespace CLI.Tests;
 
 public class GreetCommandParserTests

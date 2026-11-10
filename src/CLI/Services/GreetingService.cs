@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-
 namespace CLI.Services;
 
 internal sealed class GreetingService(ILogger<GreetingService> logger) : IGreetingService

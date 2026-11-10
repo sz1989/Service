@@ -1,5 +1,4 @@
-using CLI.Services;
-using NSubstitute;
+using Microsoft.Extensions.Logging;
 
 namespace CLI.Tests;
 
@@ -14,5 +13,6 @@ internal sealed class ServiceCollectionStub(
     public object? GetService(Type serviceType) =>
         serviceType == typeof(IGreetingService) ? _greetingService
         : serviceType == typeof(IPeopleService) ? _peopleService
+        : serviceType == typeof(ILogger<PeopleCommand>) ? NullLogger<PeopleCommand>.Instance
         : null;
 }

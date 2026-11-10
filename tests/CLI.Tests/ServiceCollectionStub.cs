@@ -1,18 +1,20 @@
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CLI.Tests;
 
-/// <summary>Minimal <see cref="IServiceProvider"/> that serves the CLI services, defaulting to substitutes.</summary>
+/// <summary>Builds the CLI's real command registrations on top of <see cref="IGreetingService"/>/<see cref="IPeopleService"/> substitutes.</summary>
 internal sealed class ServiceCollectionStub(
     IGreetingService? greetingService = null,
-    IPeopleService? peopleService = null) : IServiceProvider
+    IPeopleService? peopleService = null) : IServiceProvider, IDisposable
 {
-    private readonly IGreetingService _greetingService = greetingService ?? Substitute.For<IGreetingService>();
-    private readonly IPeopleService _peopleService = peopleService ?? Substitute.For<IPeopleService>();
+    private readonly ServiceProvider _provider = new ServiceCollection()
+        .AddLogging()
+        .AddTransient(_ => greetingService ?? Substitute.For<IGreetingService>())
+        .AddTransient(_ => peopleService ?? Substitute.For<IPeopleService>())
+        .AddCommands()
+        .BuildServiceProvider();
 
-    public object? GetService(Type serviceType) =>
-        serviceType == typeof(IGreetingService) ? _greetingService
-        : serviceType == typeof(IPeopleService) ? _peopleService
-        : serviceType == typeof(ILogger<PeopleCommand>) ? NullLogger<PeopleCommand>.Instance
-        : null;
+    public object? GetService(Type serviceType) => _provider.GetService(serviceType);
+
+    public void Dispose() => _provider.Dispose();
 }

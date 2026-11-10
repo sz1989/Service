@@ -5,8 +5,11 @@ internal static class RootCommandFactory
     public static RootCommand Create(IServiceProvider services)
     {
         var root = new RootCommand("Command-line tool for the Service solution.");
-        root.Subcommands.Add(new GreetCommand(services.GetRequiredService<IGreetingService>()));
-        root.Subcommands.Add(new PeopleCommand(services.GetRequiredService<IPeopleService>, services.GetRequiredService<ILogger<PeopleCommand>>()));
+        foreach (var command in services.GetServices<Command>())
+        {
+            root.Subcommands.Add(command);
+        }
+
         return root;
     }
 }

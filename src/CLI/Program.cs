@@ -22,6 +22,7 @@ using var host = Host.CreateDefaultBuilder(args)
         });
         services.AddTransient<IGreetingService, GreetingService>();
         services.AddTransient<IPeopleService, PeopleService>();
+        services.AddCommands();
     })
     .Build();
 

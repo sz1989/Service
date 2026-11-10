@@ -1,9 +1,3 @@
-using System.CommandLine;
-using CLI.Commands;
-using CLI.Services;
-using Microsoft.Extensions.Logging.Abstractions;
-using NSubstitute;
-
 namespace CLI.Tests;
 
 public sealed class GreetCommandHandlerTests : IDisposable

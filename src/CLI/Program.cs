@@ -1,9 +1,6 @@
 using CLI.Commands;
-using CLI.Services;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Npgsql;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
@@ -18,13 +15,13 @@ using var host = Host.CreateDefaultBuilder(args)
         .WriteTo.Console(new CompactJsonFormatter(), standardErrorFromLevel: LogEventLevel.Verbose))
     .ConfigureServices((context, services) =>
     {
-        _ = services.AddSingleton(sp =>
+        services.AddSingleton(sp =>
         {
             var connectionString = context.Configuration.GetConnectionString("Db");
-            return string.IsNullOrWhiteSpace(connectionString) ? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.") : NpgsqlDataSource.Create(connectionString);
+            return string.IsNullOrWhiteSpace(connectionString) ? throw new InvalidOperationException("ConnectionStrings:Db is not configured.") : NpgsqlDataSource.Create(connectionString);
         });
-        _ = services.AddTransient<IGreetingService, GreetingService>();
-        _ = services.AddTransient<IPeopleService, PeopleService>();
+        services.AddTransient<IGreetingService, GreetingService>();
+        services.AddTransient<IPeopleService, PeopleService>();
     })
     .Build();
 

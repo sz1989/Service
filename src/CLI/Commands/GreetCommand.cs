@@ -1,6 +1,3 @@
-using System.CommandLine;
-using CLI.Services;
-
 namespace CLI.Commands;
 
 internal sealed class GreetCommand : Command
@@ -27,7 +24,7 @@ internal sealed class GreetCommand : Command
                 result.AddError("--name must not be blank.");
             }
         });
-        _ = _outputDir.AcceptExistingOnly();
+        _outputDir.AcceptExistingOnly();
 
         Options.Add(_name);
         Options.Add(_outputDir);

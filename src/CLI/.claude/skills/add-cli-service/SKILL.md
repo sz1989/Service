@@ -27,32 +27,51 @@ See `src/CLI/AGENTS.md` for the full rules.
    - Let `OperationCanceledException` propagate (the command maps it to exit 130).
    - Log with message templates (`"Read {Count} rows"`), never string interpolation.
 
-4. **DI**: register in `src/CLI/Program.cs` inside `ConfigureServices`. Anything
-   needing config or a connection must be created lazily with a factory
-   (`AddSingleton(sp => ...)`) so `--help` works with nothing configured. Read config
-   from `context.Configuration`; never hardcode secrets.
+4. **DI**: register in `src/CLI/Program.cs` inside `ConfigureServices`. Services are
+   `AddTransient<IFooService, FooService>()`; shared infrastructure such as
+   `NpgsqlDataSource` stays a singleton. Anything needing config or a connection must be
+   created lazily with a factory (`AddSingleton(sp => ...)`) so `--help` works with
+   nothing configured. Read config from `context.Configuration`; never hardcode secrets.
 
 5. **Command**: add a `Commands/<Feature>Command.cs` taking the service in its
-   constructor, and register it in `RootCommandFactory.Create`. Write output via
-   `parseResult.InvocationConfiguration.Output`, errors via `.Error`. Return 0 on
-   success, 1 on the service exception, 130 on cancellation.
+   constructor (use a primary constructor when the body needs no setup logic; commands
+   that add options/validators in the body use an explicit one, like `GreetCommand`).
+   Register it in `AddCommands()` (`Commands/CommandServiceCollectionExtensions.cs`) as
+   `services.AddTransient<Command, <Feature>Command>()`. `RootCommandFactory` resolves
+   every registered `Command`, so do not edit the factory.
+   - If the service needs config or a database, take `Func<I<Feature>Service>` instead
+     and register `services.AddTransient<Func<I<Feature>Service>>(sp =>
+     sp.GetRequiredService<I<Feature>Service>)` in `AddCommands()`, so the service is
+     only resolved when the command runs and `--help` still works. Mirror `PeopleCommand`.
+   - Write output via `parseResult.InvocationConfiguration.Output`, errors via `.Error`.
+     Status messages go through `ILogger<T>` (stderr JSON), not the output writer.
+   - Return 0 on success, 1 on the service exception, 130 on cancellation.
 
 6. **Tests** in `tests/CLI.Tests`, mirroring `GreetCommandHandlerTests.cs`:
    - Command tests with `Substitute.For<I<Feature>Service>()`: success, service
      exception, cancellation, empty result.
-   - Extend `ServiceCollectionStub` so the factory can resolve the new service.
+   - Extend `ServiceCollectionStub`: add an optional `I<Feature>Service?` parameter and
+     register it with `.AddTransient(_ => service ?? Substitute.For<I<Feature>Service>())`.
+     The stub builds a real `ServiceCollection` and calls `AddCommands()`, so the new
+     command is resolved exactly as in production.
    - Use plain xUnit assertions with the expected value first. No FluentAssertions.
 
    ```bash
    dotnet test --no-restore --verbosity normal
    ```
 
-7. **Verify**: `dotnet build src/CLI` must produce 0 warnings (warnings are errors),
+7. **Usings**: if a `using` ends up in more than one `.cs` file of a project, move it to
+   that project's `Using.cs` as `global using` (alphabetical, `System.*` not first) and
+   delete the per-file copies. See the root `AGENTS.md`.
+
+8. **Verify**: `dotnet build src/CLI` must produce 0 warnings (warnings are errors),
    and `dotnet run --project src/CLI -- --help` must work with no env vars set.
 
 ## Don't
 
 - Don't put `System.CommandLine` types in a service.
+- Don't instantiate commands by hand or add them to `RootCommandFactory`; register them
+  in `AddCommands()`.
 - Don't register eagerly something that throws when config is missing.
 - Don't add a package version in `CLI.csproj`; add it to `Directory.Packages.props`.
 - Don't use `.Result` / `.Wait()` or empty `catch` blocks.

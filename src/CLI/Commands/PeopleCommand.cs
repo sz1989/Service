@@ -1,3 +1,4 @@
+using System.CommandLine.Parsing;
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
@@ -15,6 +16,8 @@ internal sealed class PeopleCommand : Command
 
     private const string _defaultCsvFileName = "people.csv";
 
+    private const string _defaultMarkdownFileName = "people.md";
+
     private readonly Option<FileInfo> _csv = new("--csv", "-c")
     {
         Description = $"Write the list to this CSV file (overwritten if it exists) instead of printing it. Without a file, writes {_defaultCsvFileName} next to the executable.",
@@ -22,8 +25,15 @@ internal sealed class PeopleCommand : Command
         CustomParser = result => new FileInfo(result.Tokens.Count == 0 ? Path.Combine(AppContext.BaseDirectory, _defaultCsvFileName) : result.Tokens[0].Value)
     };
 
+    private readonly Option<FileInfo> _markdown = new("--markdown", "-m")
+    {
+        Description = $"Write the list to this Markdown file (overwritten if it exists) instead of printing it. Without a file, writes {_defaultMarkdownFileName} next to the executable.",
+        Arity = ArgumentArity.ZeroOrOne,
+        CustomParser = result => new FileInfo(result.Tokens.Count == 0 ? Path.Combine(AppContext.BaseDirectory, _defaultMarkdownFileName) : result.Tokens[0].Value)
+    };
+
     /// <param name="peopleServiceFactory">Resolved when the command runs, so <c>--help</c> works without a database configured.</param>
-    /// <param name="logger">Logs the outcome of a CSV export.</param>
+    /// <param name="logger">Logs the outcome of a CSV or Markdown export.</param>
     public PeopleCommand(Func<IPeopleService> peopleServiceFactory, ILogger<PeopleCommand> logger)
         : base("people", "List people from the database.")
     {
@@ -35,17 +45,12 @@ internal sealed class PeopleCommand : Command
             }
         });
 
-        _csv.Validators.Add(result =>
-        {
-            var file = result.GetValueOrDefault<FileInfo>();
-            if (file.Directory is { Exists: false } directory)
-            {
-                result.AddError($"--csv directory '{directory.FullName}' does not exist.");
-            }
-        });
+        _csv.Validators.Add(result => ValidateDirectoryExists(result, "--csv"));
+        _markdown.Validators.Add(result => ValidateDirectoryExists(result, "--markdown"));
 
         Options.Add(_limit);
         Options.Add(_csv);
+        Options.Add(_markdown);
 
         SetAction((parseResult, ct) => RunAsync(peopleServiceFactory, logger, parseResult, ct));
     }
@@ -60,10 +65,23 @@ internal sealed class PeopleCommand : Command
             var people = await peopleServiceFactory().ListAsync(parseResult.GetRequiredValue(_limit), ct);
 
             // GetResult: was --csv typed at all? `is { } csvFile`: non-null check that also assigns the FileInfo to csvFile.
+            var exported = false;
             if (parseResult.GetResult(_csv) is not null && parseResult.GetValue(_csv) is { } csvFile)
             {
                 await File.WriteAllTextAsync(csvFile.FullName, ToCsv(people), new UTF8Encoding(false), ct);
                 logger.LogInformation("Wrote {Count} people to {Path}", people.Count, csvFile.FullName);
+                exported = true;
+            }
+
+            if (parseResult.GetResult(_markdown) is not null && parseResult.GetValue(_markdown) is { } markdownFile)
+            {
+                await File.WriteAllTextAsync(markdownFile.FullName, ToMarkdown(people), new UTF8Encoding(false), ct);
+                logger.LogInformation("Wrote {Count} people to {Path}", people.Count, markdownFile.FullName);
+                exported = true;
+            }
+
+            if (exported)
+            {
                 return 0;
             }
 
@@ -86,7 +104,7 @@ internal sealed class PeopleCommand : Command
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            await error.WriteLineAsync($"Could not write CSV file: {ex.Message}");
+            await error.WriteLineAsync($"Could not write file: {ex.Message}");
             return 1;
         }
         catch (InvalidOperationException ex)
@@ -101,12 +119,22 @@ internal sealed class PeopleCommand : Command
         }
     }
 
+    private static void ValidateDirectoryExists(OptionResult result, string optionName)
+    {
+        var file = result.GetValueOrDefault<FileInfo>();
+        if (file.Directory is { Exists: false } directory)
+        {
+            result.AddError($"{optionName} directory '{directory.FullName}' does not exist.");
+        }
+    }
+
+    // Header uses each PersonSummary property's [Description] when present, otherwise the property name.
+    private static IEnumerable<string> HeaderNames() =>
+        typeof(PersonSummary).GetProperties().Select(p => p.GetCustomAttribute<DescriptionAttribute>()?.Description ?? p.Name);
+
     private static string ToCsv(IReadOnlyList<PersonSummary> people)
     {
-        // Header uses each PersonSummary property's [Description] when present, otherwise the property name.
-        var header = string.Join(
-            ',',
-            typeof(PersonSummary).GetProperties().Select(p => EscapeCsv(p.GetCustomAttribute<DescriptionAttribute>()?.Description ?? p.Name)));
+        var header = string.Join(',', HeaderNames().Select(EscapeCsv));
         var builder = new StringBuilder(header).Append("\r\n");
         foreach (var person in people)
         {
@@ -119,6 +147,31 @@ internal sealed class PeopleCommand : Command
 
         return builder.ToString();
     }
+
+    private static string ToMarkdown(IReadOnlyList<PersonSummary> people)
+    {
+        // Salary column is right-aligned (`---:`); the rest default to left.
+        var builder = new StringBuilder()
+            .Append("| ").AppendJoin(" | ", HeaderNames()).Append(" |\n")
+            .Append("| ---: | --- | --- | ---: |\n");
+        foreach (var person in people)
+        {
+            builder
+                .Append("| ").Append(person.Id.ToString(CultureInfo.InvariantCulture))
+                .Append(" | ").Append(EscapeMarkdown(person.Name))
+                .Append(" | ").Append(person.DateOfBirth.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
+                .Append(" | ").Append(person.Salary.ToString("0.00", CultureInfo.InvariantCulture))
+                .Append(" |\n");
+        }
+
+        return builder.ToString();
+    }
+
+    private static string EscapeMarkdown(string value) =>
+        value.Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("|", "\\|", StringComparison.Ordinal)
+            .Replace("\r\n", "<br>", StringComparison.Ordinal)
+            .Replace("\n", "<br>", StringComparison.Ordinal);
 
     private static string EscapeCsv(string value) =>
         value.AsSpan().IndexOfAny(",\"\r\n") >= 0 ? $"\"{value.Replace("\"", "\"\"", StringComparison.Ordinal)}\"" : value;

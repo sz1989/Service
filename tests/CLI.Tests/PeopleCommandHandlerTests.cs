@@ -143,4 +143,43 @@ public sealed class PeopleCommandHandlerTests : IDisposable
             File.Delete(path);
         }
     }
+
+    [Fact]
+    public async Task People_WithMarkdown_WritesTable_AndDoesNotPrintRows()
+    {
+        PersonSummary[] people =
+        [
+            new(1, "Ada", new DateOnly(1990, 1, 2), 1234.5m),
+            new(2, "Love|lace", new DateOnly(1985, 12, 31), 10m)
+        ];
+        _ = _peopleService.ListAsync(20, Arg.Any<CancellationToken>()).Returns(people);
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.md");
+
+        try
+        {
+            var exitCode = await RunAsync("people", "--markdown", path);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal(
+                "| Id | Name | Date of birth | Annual salary |\n| ---: | --- | --- | ---: |\n| 1 | Ada | 1990-01-02 | 1234.50 |\n| 2 | Love\\|lace | 1985-12-31 | 10.00 |\n",
+                await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+            Assert.Empty(_output.ToString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void People_WithMarkdownInMissingDirectory_ReportsError()
+    {
+        var root = RootCommandFactory.Create(new ServiceCollectionStub(peopleService: _peopleService));
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "people.md");
+
+        var result = root.Parse(["people", "--markdown", path]);
+
+        var error = Assert.Single(result.Errors);
+        Assert.Contains("--markdown directory", error.Message);
+    }
 }

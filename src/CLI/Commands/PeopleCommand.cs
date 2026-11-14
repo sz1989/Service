@@ -18,6 +18,8 @@ internal sealed class PeopleCommand : Command
 
     private const string _defaultMarkdownFileName = "people.md";
 
+    private const string _defaultPdfFileName = "people.pdf";
+
     private readonly Option<FileInfo> _csv = new("--csv", "-c")
     {
         Description = $"Write the list to this CSV file (overwritten if it exists) instead of printing it. Without a file, writes {_defaultCsvFileName} next to the executable.",
@@ -32,8 +34,15 @@ internal sealed class PeopleCommand : Command
         CustomParser = result => new FileInfo(result.Tokens.Count == 0 ? Path.Combine(AppContext.BaseDirectory, _defaultMarkdownFileName) : result.Tokens[0].Value)
     };
 
+    private readonly Option<FileInfo> _pdf = new("--pdf", "-p")
+    {
+        Description = $"Write the list to this PDF file (overwritten if it exists) instead of printing it. Without a file, writes {_defaultPdfFileName} next to the executable.",
+        Arity = ArgumentArity.ZeroOrOne,
+        CustomParser = result => new FileInfo(result.Tokens.Count == 0 ? Path.Combine(AppContext.BaseDirectory, _defaultPdfFileName) : result.Tokens[0].Value)
+    };
+
     /// <param name="peopleServiceFactory">Resolved when the command runs, so <c>--help</c> works without a database configured.</param>
-    /// <param name="logger">Logs the outcome of a CSV or Markdown export.</param>
+    /// <param name="logger">Logs the outcome of a CSV, Markdown or PDF export.</param>
     public PeopleCommand(Func<IPeopleService> peopleServiceFactory, ILogger<PeopleCommand> logger)
         : base("people", "List people from the database.")
     {
@@ -48,9 +57,12 @@ internal sealed class PeopleCommand : Command
         _csv.Validators.Add(result => ValidateDirectoryExists(result, "--csv"));
         _markdown.Validators.Add(result => ValidateDirectoryExists(result, "--markdown"));
 
+        _pdf.Validators.Add(result => ValidateDirectoryExists(result, "--pdf"));
+
         Options.Add(_limit);
         Options.Add(_csv);
         Options.Add(_markdown);
+        Options.Add(_pdf);
 
         SetAction((parseResult, ct) => RunAsync(peopleServiceFactory, logger, parseResult, ct));
     }
@@ -77,6 +89,13 @@ internal sealed class PeopleCommand : Command
             {
                 await File.WriteAllTextAsync(markdownFile.FullName, ToMarkdown(people), new UTF8Encoding(false), ct);
                 logger.LogInformation("Wrote {Count} people to {Path}", people.Count, markdownFile.FullName);
+                exported = true;
+            }
+
+            if (parseResult.GetResult(_pdf) is not null && parseResult.GetValue(_pdf) is { } pdfFile)
+            {
+                await File.WriteAllBytesAsync(pdfFile.FullName, PeoplePdf.Render(people), ct);
+                logger.LogInformation("Wrote {Count} people to {Path}", people.Count, pdfFile.FullName);
                 exported = true;
             }
 

@@ -182,4 +182,38 @@ public sealed class PeopleCommandHandlerTests : IDisposable
         var error = Assert.Single(result.Errors);
         Assert.Contains("--markdown directory", error.Message);
     }
+
+    [Fact]
+    public async Task People_WithPdf_WritesPdfFile_AndDoesNotPrintRows()
+    {
+        PersonSummary[] people = [new(1, "Ada", new DateOnly(1990, 1, 2), 1234.5m)];
+        _ = _peopleService.ListAsync(20, Arg.Any<CancellationToken>()).Returns(people);
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.pdf");
+
+        try
+        {
+            var exitCode = await RunAsync("people", "--pdf", path);
+
+            Assert.Equal(0, exitCode);
+            var bytes = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
+            Assert.Equal("%PDF-", System.Text.Encoding.ASCII.GetString(bytes, 0, 5));
+            Assert.Empty(_output.ToString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void People_WithPdfInMissingDirectory_ReportsError()
+    {
+        var root = RootCommandFactory.Create(new ServiceCollectionStub(peopleService: _peopleService));
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "people.pdf");
+
+        var result = root.Parse(["people", "--pdf", path]);
+
+        var error = Assert.Single(result.Errors);
+        Assert.Contains("--pdf directory", error.Message);
+    }
 }

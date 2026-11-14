@@ -1,4 +1,3 @@
-using System.CommandLine.Parsing;
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
@@ -14,31 +13,16 @@ internal sealed class PeopleCommand : Command
         DefaultValueFactory = _ => 20
     };
 
-    private const string _defaultCsvFileName = "people.csv";
+    private const string _defaultFileNameWithoutExtension = "People";
 
-    private const string _defaultMarkdownFileName = "people.md";
-
-    private const string _defaultPdfFileName = "people.pdf";
-
-    private readonly Option<FileInfo> _csv = new("--csv", "-c")
+    private readonly Option<OutputFormat?> _outputFormat = new("--output-format", "--outputFormat", "-f")
     {
-        Description = $"Write the list to this CSV file (overwritten if it exists) instead of printing it. Without a file, writes {_defaultCsvFileName} next to the executable.",
-        Arity = ArgumentArity.ZeroOrOne,
-        CustomParser = result => new FileInfo(result.Tokens.Count == 0 ? Path.Combine(AppContext.BaseDirectory, _defaultCsvFileName) : result.Tokens[0].Value)
+        Description = "Write the list to a file in this format (csv, markdown or pdf) instead of printing it."
     };
 
-    private readonly Option<FileInfo> _markdown = new("--markdown", "-m")
+    private readonly Option<FileInfo> _outputFileName = new("--output-file-name", "--outputFileName", "-o")
     {
-        Description = $"Write the list to this Markdown file (overwritten if it exists) instead of printing it. Without a file, writes {_defaultMarkdownFileName} next to the executable.",
-        Arity = ArgumentArity.ZeroOrOne,
-        CustomParser = result => new FileInfo(result.Tokens.Count == 0 ? Path.Combine(AppContext.BaseDirectory, _defaultMarkdownFileName) : result.Tokens[0].Value)
-    };
-
-    private readonly Option<FileInfo> _pdf = new("--pdf", "-p")
-    {
-        Description = $"Write the list to this PDF file (overwritten if it exists) instead of printing it. Without a file, writes {_defaultPdfFileName} next to the executable.",
-        Arity = ArgumentArity.ZeroOrOne,
-        CustomParser = result => new FileInfo(result.Tokens.Count == 0 ? Path.Combine(AppContext.BaseDirectory, _defaultPdfFileName) : result.Tokens[0].Value)
+        Description = $"File (optionally with a path) to write when --output-format is set; overwritten if it exists. Defaults to {_defaultFileNameWithoutExtension}.<ext> for the format (e.g. {_defaultFileNameWithoutExtension}.csv) next to the executable."
     };
 
     /// <param name="peopleServiceFactory">Resolved when the command runs, so <c>--help</c> works without a database configured.</param>
@@ -54,15 +38,25 @@ internal sealed class PeopleCommand : Command
             }
         });
 
-        _csv.Validators.Add(result => ValidateDirectoryExists(result, "--csv"));
-        _markdown.Validators.Add(result => ValidateDirectoryExists(result, "--markdown"));
+        _outputFileName.Validators.Add(result =>
+        {
+            if (result.GetValueOrDefault<FileInfo>() is { Directory: { Exists: false } directory })
+            {
+                result.AddError($"--output-file-name directory '{directory.FullName}' does not exist.");
+            }
+        });
 
-        _pdf.Validators.Add(result => ValidateDirectoryExists(result, "--pdf"));
+        Validators.Add(result =>
+        {
+            if (result.GetResult(_outputFileName) is not null && result.GetResult(_outputFormat) is null)
+            {
+                result.AddError("--output-file-name requires --output-format.");
+            }
+        });
 
         Options.Add(_limit);
-        Options.Add(_csv);
-        Options.Add(_markdown);
-        Options.Add(_pdf);
+        Options.Add(_outputFormat);
+        Options.Add(_outputFileName);
 
         SetAction((parseResult, ct) => RunAsync(peopleServiceFactory, logger, parseResult, ct));
     }
@@ -76,31 +70,28 @@ internal sealed class PeopleCommand : Command
         {
             var people = await peopleServiceFactory().ListAsync(parseResult.GetRequiredValue(_limit), ct);
 
-            // GetResult: was --csv typed at all? `is { } csvFile`: non-null check that also assigns the FileInfo to csvFile.
-            var exported = false;
-            if (parseResult.GetResult(_csv) is not null && parseResult.GetValue(_csv) is { } csvFile)
+            if (parseResult.GetValue(_outputFormat) is { } format)
             {
-                await File.WriteAllTextAsync(csvFile.FullName, ToCsv(people), new UTF8Encoding(false), ct);
-                logger.LogInformation("Wrote {Count} people to {Path}", people.Count, csvFile.FullName);
-                exported = true;
-            }
+                var file = parseResult.GetValue(_outputFileName)
+                    ?? new FileInfo(Path.Combine(AppContext.BaseDirectory, _defaultFileNameWithoutExtension + DefaultExtension(format)));
 
-            if (parseResult.GetResult(_markdown) is not null && parseResult.GetValue(_markdown) is { } markdownFile)
-            {
-                await File.WriteAllTextAsync(markdownFile.FullName, ToMarkdown(people), new UTF8Encoding(false), ct);
-                logger.LogInformation("Wrote {Count} people to {Path}", people.Count, markdownFile.FullName);
-                exported = true;
-            }
+                switch (format)
+                {
+                    case OutputFormat.Csv:
+                        await File.WriteAllTextAsync(file.FullName, ToCsv(people), new UTF8Encoding(false), ct);
+                        break;
+                    case OutputFormat.Markdown:
+                        await File.WriteAllTextAsync(file.FullName, ToMarkdown(people), new UTF8Encoding(false), ct);
+                        break;
+                    case OutputFormat.Pdf:
+                        await File.WriteAllBytesAsync(file.FullName, PeoplePdf.Render(people), ct);
+                        break;
+                    default:
+                        await error.WriteLineAsync($"Unsupported output format '{format}'.");
+                        return 1;
+                }
 
-            if (parseResult.GetResult(_pdf) is not null && parseResult.GetValue(_pdf) is { } pdfFile)
-            {
-                await File.WriteAllBytesAsync(pdfFile.FullName, PeoplePdf.Render(people), ct);
-                logger.LogInformation("Wrote {Count} people to {Path}", people.Count, pdfFile.FullName);
-                exported = true;
-            }
-
-            if (exported)
-            {
+                logger.LogInformation("Wrote {Count} people to {Path}", people.Count, file.FullName);
                 return 0;
             }
 
@@ -138,14 +129,13 @@ internal sealed class PeopleCommand : Command
         }
     }
 
-    private static void ValidateDirectoryExists(OptionResult result, string optionName)
+    private static string DefaultExtension(OutputFormat format) => format switch
     {
-        var file = result.GetValueOrDefault<FileInfo>();
-        if (file.Directory is { Exists: false } directory)
-        {
-            result.AddError($"{optionName} directory '{directory.FullName}' does not exist.");
-        }
-    }
+        OutputFormat.Csv => ".csv",
+        OutputFormat.Markdown => ".md",
+        OutputFormat.Pdf => ".pdf",
+        _ => throw new InvalidOperationException($"Unsupported output format '{format}'.")
+    };
 
     // Header uses each PersonSummary property's [Description] when present, otherwise the property name.
     private static IEnumerable<string> HeaderNames() =>

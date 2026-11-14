@@ -83,7 +83,7 @@ public sealed class PeopleCommandHandlerTests : IDisposable
     }
 
     [Fact]
-    public async Task People_WithCsv_WritesFile_AndDoesNotPrintRows()
+    public async Task People_WithCsvFormat_WritesFile_AndDoesNotPrintRows()
     {
         PersonSummary[] people =
         [
@@ -95,14 +95,13 @@ public sealed class PeopleCommandHandlerTests : IDisposable
 
         try
         {
-            var exitCode = await RunAsync("people", "--csv", path);
+            var exitCode = await RunAsync("people", "--output-format", "csv", "--output-file-name", path);
 
             Assert.Equal(0, exitCode);
             Assert.Equal(
                 "Id,Name,Date of birth,Annual salary\r\n1,Ada,01/02/1990,1234.50\r\n2,\"Lovelace, \"\"Ada\"\"\",12/31/1985,10.00\r\n",
                 await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
             Assert.Empty(_output.ToString());
-            Assert.DoesNotContain("Ada\t", _output.ToString());
         }
         finally
         {
@@ -111,41 +110,7 @@ public sealed class PeopleCommandHandlerTests : IDisposable
     }
 
     [Fact]
-    public void People_WithCsvInMissingDirectory_ReportsError()
-    {
-        var root = RootCommandFactory.Create(new ServiceCollectionStub(peopleService: _peopleService));
-        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "people.csv");
-
-        var result = root.Parse(["people", "--csv", path]);
-
-        var error = Assert.Single(result.Errors);
-        Assert.Contains("does not exist", error.Message);
-    }
-
-    [Fact]
-    public async Task People_WithCsvAndNoFile_WritesDefaultFileInExecutableFolder()
-    {
-        PersonSummary[] people = [new(1, "Ada", new DateOnly(1990, 1, 2), 1234.5m)];
-        _ = _peopleService.ListAsync(20, Arg.Any<CancellationToken>()).Returns(people);
-        var path = Path.Combine(AppContext.BaseDirectory, "people.csv");
-
-        try
-        {
-            var exitCode = await RunAsync("people", "--csv");
-
-            Assert.Equal(0, exitCode);
-            Assert.Equal(
-                "Id,Name,Date of birth,Annual salary\r\n1,Ada,01/02/1990,1234.50\r\n",
-                await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
-    [Fact]
-    public async Task People_WithMarkdown_WritesTable_AndDoesNotPrintRows()
+    public async Task People_WithMarkdownFormat_WritesTable_AndDoesNotPrintRows()
     {
         PersonSummary[] people =
         [
@@ -157,7 +122,7 @@ public sealed class PeopleCommandHandlerTests : IDisposable
 
         try
         {
-            var exitCode = await RunAsync("people", "--markdown", path);
+            var exitCode = await RunAsync("people", "--output-format", "markdown", "--output-file-name", path);
 
             Assert.Equal(0, exitCode);
             Assert.Equal(
@@ -172,19 +137,7 @@ public sealed class PeopleCommandHandlerTests : IDisposable
     }
 
     [Fact]
-    public void People_WithMarkdownInMissingDirectory_ReportsError()
-    {
-        var root = RootCommandFactory.Create(new ServiceCollectionStub(peopleService: _peopleService));
-        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "people.md");
-
-        var result = root.Parse(["people", "--markdown", path]);
-
-        var error = Assert.Single(result.Errors);
-        Assert.Contains("--markdown directory", error.Message);
-    }
-
-    [Fact]
-    public async Task People_WithPdf_WritesPdfFile_AndDoesNotPrintRows()
+    public async Task People_WithPdfFormat_WritesPdfFile_AndDoesNotPrintRows()
     {
         PersonSummary[] people = [new(1, "Ada", new DateOnly(1990, 1, 2), 1234.5m)];
         _ = _peopleService.ListAsync(20, Arg.Any<CancellationToken>()).Returns(people);
@@ -192,7 +145,7 @@ public sealed class PeopleCommandHandlerTests : IDisposable
 
         try
         {
-            var exitCode = await RunAsync("people", "--pdf", path);
+            var exitCode = await RunAsync("people", "--output-format", "pdf", "--output-file-name", path);
 
             Assert.Equal(0, exitCode);
             var bytes = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
@@ -205,15 +158,95 @@ public sealed class PeopleCommandHandlerTests : IDisposable
         }
     }
 
+    // One test for all formats: the default files share the executable folder, so they must not run in parallel.
+    [Theory]
+    [InlineData("csv", "People.csv")]
+    [InlineData("markdown", "People.md")]
+    [InlineData("pdf", "People.pdf")]
+    public async Task People_WithFormatAndNoFileName_WritesDefaultFileInExecutableFolder(string format, string expectedFileName)
+    {
+        PersonSummary[] people = [new(1, "Ada", new DateOnly(1990, 1, 2), 1234.5m)];
+        _ = _peopleService.ListAsync(20, Arg.Any<CancellationToken>()).Returns(people);
+        var path = Path.Combine(AppContext.BaseDirectory, expectedFileName);
+
+        try
+        {
+            var exitCode = await RunAsync("people", "--output-format", format);
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains(expectedFileName, Directory.EnumerateFiles(AppContext.BaseDirectory).Select(Path.GetFileName));
+            Assert.Empty(_output.ToString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
-    public void People_WithPdfInMissingDirectory_ReportsError()
+    public async Task People_WithCamelCaseAliases_WritesFile()
+    {
+        _ = _peopleService.ListAsync(20, Arg.Any<CancellationToken>()).Returns([]);
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.csv");
+
+        try
+        {
+            var exitCode = await RunAsync("people", "--outputFormat", "csv", "--outputFileName", path);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal(
+                "Id,Name,Date of birth,Annual salary\r\n",
+                await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void People_WithOutputFileNameInMissingDirectory_ReportsError()
     {
         var root = RootCommandFactory.Create(new ServiceCollectionStub(peopleService: _peopleService));
-        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "people.pdf");
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "people.csv");
 
-        var result = root.Parse(["people", "--pdf", path]);
+        var result = root.Parse(["people", "--output-format", "csv", "--output-file-name", path]);
 
         var error = Assert.Single(result.Errors);
-        Assert.Contains("--pdf directory", error.Message);
+        Assert.Contains("--output-file-name directory", error.Message);
+    }
+
+    [Fact]
+    public void People_WithOutputFileNameButNoFormat_ReportsError()
+    {
+        var root = RootCommandFactory.Create(new ServiceCollectionStub(peopleService: _peopleService));
+
+        var result = root.Parse(["people", "--output-file-name", Path.Combine(Path.GetTempPath(), "people.csv")]);
+
+        var error = Assert.Single(result.Errors);
+        Assert.Contains("--output-file-name requires --output-format", error.Message);
+    }
+
+    [Fact]
+    public void People_WithUnknownFormat_ReportsError()
+    {
+        var root = RootCommandFactory.Create(new ServiceCollectionStub(peopleService: _peopleService));
+
+        var result = root.Parse(["people", "--output-format", "xml"]);
+
+        Assert.NotEmpty(result.Errors);
+    }
+
+    [Theory]
+    [InlineData("--csv")]
+    [InlineData("--markdown")]
+    [InlineData("--pdf")]
+    public void People_WithRemovedExportOption_ReportsError(string option)
+    {
+        var root = RootCommandFactory.Create(new ServiceCollectionStub(peopleService: _peopleService));
+
+        var result = root.Parse(["people", option]);
+
+        Assert.NotEmpty(result.Errors);
     }
 }

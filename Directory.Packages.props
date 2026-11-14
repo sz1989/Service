@@ -29,6 +29,7 @@
     <PackageVersion Include="Npgsql" Version="10.0.3" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
     <PackageVersion Include="OllamaSharp" Version="5.5.0" />
+    <PackageVersion Include="QuestPDF" Version="2026.9.2" />
     <PackageVersion Include="Pgvector" Version="0.3.2" />
     <PackageVersion Include="Polly" Version="8.5.2" />
     <PackageVersion Include="RedisRateLimiting" Version="1.2.1" />

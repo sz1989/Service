@@ -123,6 +123,7 @@ dotnet_diagnostic.CA1873.severity = none
 dotnet_diagnostic.IDE0058.severity = none
 
 dotnet_analyzer_diagnostic.category-Style.severity = warning
+dotnet_analyzer_diagnostic.category-Security.severity = error
 
 # ---------------------------------------------------------------
 # Test projects: relax some rules

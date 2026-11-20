@@ -41,7 +41,7 @@ and call `Data`/`AppDbContext` straight from a controller.
    Run:
 
    ```bash
-   dotnet test ./Service.slnx --collect:"XPlat Code Coverage"
+   dotnet test ./Service.slnx --coverage --coverage-output-format cobertura
    ```
 
 6. **Docs**: if the endpoint is user-facing, add a row to `doc/ServiceRef.md`'s

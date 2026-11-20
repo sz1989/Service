@@ -40,7 +40,7 @@ curl -k -H "Authorization: Bearer $(./src/Service/generate-jwt.sh admin)" https:
 ```bash
 # Backend
 dotnet build ./Service.slnx --configuration Release
-dotnet test ./Service.slnx --collect:"XPlat Code Coverage"
+dotnet test ./Service.slnx --coverage --coverage-output-format cobertura
 
 # UI (run from ui/)
 npm run build       # tsc -b && vite build
